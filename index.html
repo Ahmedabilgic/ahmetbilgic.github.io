@@ -1,73 +1,537 @@
 <!DOCTYPE html>
-<html>
+<html lang="tr">
 <head>
-<meta charset="UTF-8">
-<title>Ahmet Bilgiç - Sayfalar</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ahmet Bilgiç | Portfolio</title>
+  <style>
+    :root {
+      --bg-1: #0f172a;
+      --bg-2: #111827;
+      --bg-3: #1e293b;
+      --card: rgba(255, 255, 255, 0.08);
+      --card-border: rgba(255, 255, 255, 0.12);
+      --text: #f8fafc;
+      --muted: #cbd5e1;
+      --accent: #60a5fa;
+      --accent-2: #a78bfa;
+      --shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+    }
 
-<style>
-body{
-font-family:Arial;
-background:#f4f4f4;
-text-align:center;
-padding:40px;
-}
+    * {
+      box-sizing: border-box;
+    }
 
-.container{
-display:grid;
-grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
-gap:20px;
-max-width:800px;
-margin:auto;
-}
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: Inter, Arial, Helvetica, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(96,165,250,0.22), transparent 30%),
+        radial-gradient(circle at top right, rgba(167,139,250,0.18), transparent 28%),
+        linear-gradient(135deg, var(--bg-1), var(--bg-2), var(--bg-3));
+      color: var(--text);
+      min-height: 100%;
+    }
 
-.card{
-background:white;
-padding:20px;
-border-radius:10px;
-box-shadow:0 4px 10px rgba(0,0,0,0.1);
-text-decoration:none;
-color:black;
-}
-</style>
+    body {
+      padding: 40px 20px 60px;
+    }
 
+    .wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .hero {
+      text-align: center;
+      margin-bottom: 36px;
+    }
+
+    .hero-badge {
+      display: inline-block;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 18px;
+      backdrop-filter: blur(12px);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(34px, 6vw, 64px);
+      line-height: 1.05;
+      letter-spacing: -1.5px;
+    }
+
+    .gradient-text {
+      background: linear-gradient(90deg, #93c5fd, #c4b5fd, #67e8f9);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .subtitle {
+      max-width: 760px;
+      margin: 18px auto 0;
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.7;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      margin: 34px 0 24px;
+    }
+
+    .search-box {
+      flex: 1;
+      min-width: 260px;
+      position: relative;
+    }
+
+    .search-box input {
+      width: 100%;
+      padding: 16px 18px 16px 48px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.08);
+      color: var(--text);
+      outline: none;
+      font-size: 15px;
+      backdrop-filter: blur(12px);
+      box-shadow: var(--shadow);
+    }
+
+    .search-box input::placeholder {
+      color: #cbd5e1;
+      opacity: 0.8;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 18px;
+      opacity: 0.9;
+    }
+
+    .stats {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .stat {
+      padding: 14px 18px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: var(--muted);
+      font-size: 14px;
+      backdrop-filter: blur(12px);
+      box-shadow: var(--shadow);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+      gap: 22px;
+    }
+
+    .card {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      text-decoration: none;
+      color: inherit;
+      padding: 22px;
+      border-radius: 24px;
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      backdrop-filter: blur(16px);
+      box-shadow: var(--shadow);
+      transition: transform 0.25s ease, border-color 0.25s ease, background 0.25s ease;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.06), transparent 45%);
+      pointer-events: none;
+    }
+
+    .card:hover {
+      transform: translateY(-6px);
+      border-color: rgba(147,197,253,0.45);
+      background: rgba(255,255,255,0.11);
+    }
+
+    .top-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .icon-wrap {
+      width: 56px;
+      height: 56px;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      font-size: 28px;
+      background: linear-gradient(135deg, rgba(96,165,250,0.22), rgba(167,139,250,0.22));
+      border: 1px solid rgba(255,255,255,0.12);
+      flex-shrink: 0;
+    }
+
+    .open-badge {
+      font-size: 13px;
+      color: #dbeafe;
+      background: rgba(96,165,250,0.16);
+      border: 1px solid rgba(96,165,250,0.28);
+      padding: 8px 12px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    .title {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.4px;
+      margin: 0;
+      word-break: break-word;
+    }
+
+    .filename {
+      color: var(--muted);
+      font-size: 14px;
+      margin-top: -8px;
+      word-break: break-word;
+    }
+
+    .meta {
+      display: grid;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .meta-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #e2e8f0;
+      font-size: 14px;
+    }
+
+    .meta-item span:first-child {
+      width: 22px;
+      text-align: center;
+      opacity: 0.95;
+      flex-shrink: 0;
+    }
+
+    .card-footer {
+      margin-top: auto;
+      padding-top: 4px;
+      color: #bfdbfe;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .status {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .error {
+      max-width: 700px;
+      margin: 20px auto;
+      padding: 18px 20px;
+      border-radius: 18px;
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(248, 113, 113, 0.28);
+      color: #fecaca;
+      line-height: 1.6;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    footer {
+      margin-top: 50px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    @media (max-width: 640px) {
+      body {
+        padding: 24px 14px 40px;
+      }
+
+      .card {
+        padding: 18px;
+        border-radius: 20px;
+      }
+
+      .title {
+        font-size: 20px;
+      }
+
+      .toolbar {
+        margin-top: 26px;
+      }
+    }
+  </style>
 </head>
-
 <body>
+  <div class="wrap">
+    <section class="hero">
+      <div class="hero-badge">✨ Otomatik oluşturulan sayfa dizini</div>
+      <h1><span class="gradient-text">Ahmet Bilgiç</span><br />Portfolio Pages</h1>
+      <p class="subtitle">
+        Bu ana sayfa, GitHub reposundaki HTML dosyalarını otomatik olarak listeler.
+        Yeni bir `.html` dosyası eklediğinde burada otomatik görünür.
+      </p>
+    </section>
 
-<h1>Site Sayfaları</h1>
+    <section class="toolbar">
+      <div class="search-box">
+        <span class="search-icon">🔎</span>
+        <input type="text" id="searchInput" placeholder="Sayfa ara... örn: cv, proje, hesaplama" />
+      </div>
 
-<div class="container" id="pages"></div>
+      <div class="stats">
+        <div class="stat">📄 Toplam sayfa: <strong id="pageCount">0</strong></div>
+        <div class="stat">🕒 Son veri yenileme: <strong id="refreshTime">-</strong></div>
+      </div>
+    </section>
 
-<script>
+    <div id="status" class="status">Sayfalar yükleniyor...</div>
+    <div id="errorBox" class="error hidden"></div>
+    <div id="pages" class="grid hidden"></div>
 
-const repo = "ahmetbilgic.github.io";
-const user = "ahmedabilgic";
+    <footer>
+      GitHub Pages üzerinden otomatik listeleniyor.
+    </footer>
+  </div>
 
-fetch(`https://api.github.com/repos/${user}/${repo}/contents`)
-.then(res => res.json())
-.then(files => {
+  <script>
+    const user = "ahmedabilgic";
+    const repo = "ahmetbilgic.github.io";
 
-const container = document.getElementById("pages");
+    const pagesContainer = document.getElementById("pages");
+    const statusEl = document.getElementById("status");
+    const errorBox = document.getElementById("errorBox");
+    const pageCountEl = document.getElementById("pageCount");
+    const refreshTimeEl = document.getElementById("refreshTime");
+    const searchInput = document.getElementById("searchInput");
 
-files.forEach(file => {
+    let allPages = [];
 
-if(file.name.endsWith(".html") && file.name !== "index.html"){
+    function formatSize(bytes) {
+      if (bytes < 1024) return bytes + " B";
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+      return (bytes / (1024 * 1024)).toFixed(2) + " MB";
+    }
 
-const link = document.createElement("a");
+    function formatDate(dateString) {
+      if (!dateString) return "Bilinmiyor";
+      const date = new Date(dateString);
+      return new Intl.DateTimeFormat("tr-TR", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+      }).format(date);
+    }
 
-link.href = file.name;
-link.className = "card";
-link.innerText = file.name.replace(".html","");
+    function prettifyName(fileName) {
+      return fileName
+        .replace(".html", "")
+        .replace(/[-_]+/g, " ")
+        .replace(/\b\w/g, char => char.toUpperCase());
+    }
 
-container.appendChild(link);
+    function getIcon(fileName) {
+      const name = fileName.toLowerCase();
 
-}
+      if (name.includes("cv") || name.includes("resume")) return "👤";
+      if (name.includes("about") || name.includes("hakkimda")) return "🙋";
+      if (name.includes("project") || name.includes("proje")) return "🚀";
+      if (name.includes("blog")) return "✍️";
+      if (name.includes("calc") || name.includes("hesap")) return "🧮";
+      if (name.includes("grafik") || name.includes("chart")) return "📊";
+      if (name.includes("game") || name.includes("oyun")) return "🎮";
+      if (name.includes("photo") || name.includes("gallery") || name.includes("galeri")) return "🖼️";
+      if (name.includes("contact") || name.includes("iletisim")) return "📬";
+      if (name.includes("music") || name.includes("audio")) return "🎵";
+      if (name.includes("video")) return "🎬";
+      if (name.includes("note") || name.includes("docs")) return "📝";
+      if (name.includes("test")) return "🧪";
+      return "🌐";
+    }
 
-});
+    async function getLastUpdate(filePath) {
+      const url = `https://api.github.com/repos/${user}/${repo}/commits?path=${encodeURIComponent(filePath)}&page=1&per_page=1`;
 
-});
+      const response = await fetch(url);
+      if (!response.ok) return null;
 
-</script>
+      const commits = await response.json();
+      if (!Array.isArray(commits) || commits.length === 0) return null;
 
+      return commits[0]?.commit?.committer?.date || null;
+    }
+
+    function createCard(page) {
+      const a = document.createElement("a");
+      a.className = "card";
+      a.href = page.name;
+      a.target = "_self";
+
+      a.innerHTML = `
+        <div class="top-row">
+          <div class="icon-wrap">${page.icon}</div>
+          <div class="open-badge">Sayfayı Aç →</div>
+        </div>
+
+        <h2 class="title">${page.prettyName}</h2>
+        <div class="filename">${page.name}</div>
+
+        <div class="meta">
+          <div class="meta-item">
+            <span>📦</span>
+            <span>Dosya boyutu: ${formatSize(page.size)}</span>
+          </div>
+          <div class="meta-item">
+            <span>🕒</span>
+            <span>Son güncelleme: ${formatDate(page.lastUpdated)}</span>
+          </div>
+        </div>
+
+        <div class="card-footer">Detaylı içeriği görüntüle</div>
+      `;
+
+      return a;
+    }
+
+    function renderPages(list) {
+      pagesContainer.innerHTML = "";
+
+      if (list.length === 0) {
+        statusEl.textContent = "Aramana uygun sayfa bulunamadı.";
+        statusEl.classList.remove("hidden");
+        pagesContainer.classList.add("hidden");
+        pageCountEl.textContent = "0";
+        return;
+      }
+
+      list.forEach(page => {
+        pagesContainer.appendChild(createCard(page));
+      });
+
+      pageCountEl.textContent = list.length;
+      statusEl.classList.add("hidden");
+      pagesContainer.classList.remove("hidden");
+    }
+
+    function showError(message) {
+      errorBox.textContent = message;
+      errorBox.classList.remove("hidden");
+      statusEl.classList.add("hidden");
+      pagesContainer.classList.add("hidden");
+    }
+
+    async function loadPages() {
+      try {
+        errorBox.classList.add("hidden");
+        statusEl.textContent = "Sayfalar yükleniyor...";
+
+        const contentsUrl = `https://api.github.com/repos/${user}/${repo}/contents`;
+        const response = await fetch(contentsUrl);
+
+        if (!response.ok) {
+          throw new Error("GitHub API'den repo içeriği alınamadı.");
+        }
+
+        const files = await response.json();
+
+        const htmlFiles = files.filter(file =>
+          file.type === "file" &&
+          file.name.endsWith(".html") &&
+          file.name.toLowerCase() !== "index.html"
+        );
+
+        if (htmlFiles.length === 0) {
+          statusEl.textContent = "Listelenecek HTML sayfası bulunamadı.";
+          pageCountEl.textContent = "0";
+          refreshTimeEl.textContent = new Date().toLocaleTimeString("tr-TR");
+          return;
+        }
+
+        const pageData = await Promise.all(
+          htmlFiles.map(async file => {
+            const lastUpdated = await getLastUpdate(file.name);
+            return {
+              name: file.name,
+              size: file.size || 0,
+              prettyName: prettifyName(file.name),
+              icon: getIcon(file.name),
+              lastUpdated
+            };
+          })
+        );
+
+        pageData.sort((a, b) => {
+          const dateA = a.lastUpdated ? new Date(a.lastUpdated).getTime() : 0;
+          const dateB = b.lastUpdated ? new Date(b.lastUpdated).getTime() : 0;
+          return dateB - dateA;
+        });
+
+        allPages = pageData;
+        renderPages(allPages);
+        refreshTimeEl.textContent = new Date().toLocaleTimeString("tr-TR");
+      } catch (error) {
+        showError(
+          "Sayfalar yüklenirken bir hata oluştu. Repo adını ve kullanıcı adını kontrol et. " +
+          "Ayrıca GitHub API rate limit nedeniyle geçici olarak engellemiş olabilir."
+        );
+        console.error(error);
+      }
+    }
+
+    searchInput.addEventListener("input", function () {
+      const q = this.value.trim().toLowerCase();
+
+      const filtered = allPages.filter(page =>
+        page.name.toLowerCase().includes(q) ||
+        page.prettyName.toLowerCase().includes(q)
+      );
+
+      renderPages(filtered);
+    });
+
+    loadPages();
+  </script>
 </body>
 </html>
