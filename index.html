@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ahmet Bilgiç | Portfolio Hub</title>
+  <title>Ahmet Bilgiç | Ai Deneysel Çalışma Alanı</title>
   <style>
     :root {
       --bg: #07111f;
@@ -16,6 +16,7 @@
       --accent: #6ea8ff;
       --accent-2: #9f7aea;
       --success: #7ee787;
+      --warning: #ffd166;
       --shadow: 0 20px 50px rgba(0, 0, 0, 0.28);
       --thumb-text: #ffffff;
     }
@@ -31,6 +32,7 @@
       --accent: #2563eb;
       --accent-2: #7c3aed;
       --success: #0f9d58;
+      --warning: #d97706;
       --shadow: 0 14px 32px rgba(31, 60, 104, 0.14);
       --thumb-text: #ffffff;
     }
@@ -83,19 +85,6 @@
       pointer-events: none;
     }
 
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: rgba(255,255,255,0.08);
-      border: 1px solid var(--border);
-      padding: 8px 14px;
-      border-radius: 999px;
-      font-size: 13px;
-      color: var(--muted);
-      margin-bottom: 16px;
-    }
-
     .hero h1 {
       margin: 0;
       font-size: clamp(34px, 7vw, 72px);
@@ -111,17 +100,9 @@
       color: transparent;
     }
 
-    .hero p {
-      max-width: 800px;
-      margin: 16px 0 0;
-      color: var(--muted);
-      line-height: 1.75;
-      font-size: 16px;
-    }
-
     .topbar {
       display: grid;
-      grid-template-columns: 1.6fr 1fr auto;
+      grid-template-columns: 1.7fr 220px 170px;
       gap: 14px;
       margin: 18px 0 20px;
       animation: fadeUp 0.85s ease both;
@@ -166,13 +147,12 @@
     .stats {
       display: flex;
       gap: 10px;
-      flex-wrap: wrap;
       padding: 10px;
       align-items: stretch;
     }
 
     .stat {
-      flex: 1 1 140px;
+      flex: 1 1 auto;
       min-width: 120px;
       border-radius: 16px;
       background: rgba(255,255,255,0.05);
@@ -210,35 +190,10 @@
 
     .controls {
       display: grid;
-      grid-template-columns: 1fr 220px;
+      grid-template-columns: 1fr;
       gap: 14px;
       margin-bottom: 18px;
       animation: fadeUp 1s ease both;
-    }
-
-    .chips {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      padding: 12px;
-    }
-
-    .chip {
-      cursor: pointer;
-      border: 1px solid var(--border);
-      background: rgba(255,255,255,0.05);
-      color: var(--text);
-      padding: 10px 14px;
-      border-radius: 999px;
-      font-size: 13px;
-      transition: all 0.2s ease;
-    }
-
-    .chip:hover,
-    .chip.active {
-      background: linear-gradient(90deg, rgba(110,168,255,0.22), rgba(159,122,234,0.22));
-      border-color: rgba(110,168,255,0.35);
-      transform: translateY(-1px);
     }
 
     .sort-wrap {
@@ -296,6 +251,20 @@
       color: #ffd4d4;
       border-color: rgba(255, 90, 90, 0.24);
       background: rgba(180, 36, 36, 0.14);
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 28px 4px 16px;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .section-title .emoji {
+      font-size: 18px;
     }
 
     .grid {
@@ -369,17 +338,6 @@
       max-width: 72%;
     }
 
-    .thumb-tag {
-      display: inline-block;
-      align-self: flex-start;
-      font-size: 12px;
-      font-weight: 600;
-      background: rgba(0,0,0,0.18);
-      border: 1px solid rgba(255,255,255,0.16);
-      padding: 6px 10px;
-      border-radius: 999px;
-    }
-
     .thumb-title {
       font-size: 22px;
       line-height: 1.08;
@@ -391,6 +349,36 @@
       z-index: 1;
       font-size: 40px;
       filter: drop-shadow(0 8px 20px rgba(0,0,0,0.15));
+    }
+
+    .favorite-btn {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      z-index: 3;
+      width: 42px;
+      height: 42px;
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 14px;
+      background: rgba(10, 18, 32, 0.28);
+      color: #ffffff;
+      display: grid;
+      place-items: center;
+      font-size: 18px;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+      transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+    }
+
+    .favorite-btn:hover {
+      transform: scale(1.06);
+      background: rgba(10, 18, 32, 0.45);
+    }
+
+    .favorite-btn.active {
+      color: var(--warning);
+      border-color: rgba(255, 209, 102, 0.45);
+      background: rgba(255, 209, 102, 0.12);
     }
 
     .card h2 {
@@ -452,7 +440,7 @@
     }
 
     footer {
-      margin-top: 26px;
+      margin-top: 30px;
       text-align: center;
       color: var(--muted);
       font-size: 13px;
@@ -471,8 +459,7 @@
     }
 
     @media (max-width: 950px) {
-      .topbar,
-      .controls {
+      .topbar {
         grid-template-columns: 1fr;
       }
     }
@@ -504,18 +491,13 @@
 <body>
   <div class="container">
     <section class="hero">
-      <div class="badge">✨ Otomatik Portfolio Hub</div>
-      <h1><span class="gradient">Ahmet Bilgiç</span><br>HTML Sayfa Merkezi</h1>
-      <p>
-        Bu sayfa GitHub reposundaki tüm HTML dosyalarını otomatik olarak tarar, kategorilere ayırır,
-        dosya boyutunu ve son güncelleme zamanını gösterir. Yeni bir sayfa eklediğinde liste otomatik güncellenir.
-      </p>
+      <h1><span class="gradient">Ahmet Bilgiç</span><br>Ai Deneysel Çalışma Alanı</h1>
     </section>
 
     <section class="topbar">
       <div class="panel search-wrap">
         <span class="search-icon">🔎</span>
-        <input id="searchInput" type="text" placeholder="Sayfa ara... örn: cv, proje, hesap, grafik" />
+        <input id="searchInput" type="text" placeholder="Sayfa ara..." />
       </div>
 
       <div class="panel stats">
@@ -523,23 +505,19 @@
           <div class="stat-label">Toplam Sayfa</div>
           <div class="stat-value" id="pageCount">0</div>
         </div>
-        <div class="stat">
-          <div class="stat-label">Son Yenileme</div>
-          <div class="stat-value" id="refreshTime">-</div>
-        </div>
       </div>
 
       <button class="theme-btn" id="themeToggle">🌙 Tema Değiştir</button>
     </section>
 
     <section class="controls">
-      <div class="panel chips" id="chips"></div>
       <div class="panel sort-wrap">
         <select id="sortSelect">
-          <option value="updated-desc">En yeni güncellenen</option>
-          <option value="updated-asc">En eski güncellenen</option>
           <option value="name-asc" selected>İsim A-Z</option>
           <option value="name-desc">İsim Z-A</option>
+          <option value="favorites">Önce Favoriler</option>
+          <option value="updated-desc">En yeni güncellenen</option>
+          <option value="updated-asc">En eski güncellenen</option>
           <option value="size-desc">Boyut büyükten küçüğe</option>
           <option value="size-asc">Boyut küçükten büyüğe</option>
         </select>
@@ -548,7 +526,16 @@
 
     <div id="status" class="status">Sayfalar yükleniyor...</div>
     <div id="error" class="error hidden"></div>
-    <section id="grid" class="grid hidden"></section>
+
+    <div id="favoritesSection" class="hidden">
+      <div class="section-title"><span class="emoji">⭐</span> Favoriler</div>
+      <section id="favoritesGrid" class="grid"></section>
+    </div>
+
+    <div id="allSection" class="hidden">
+      <div class="section-title"><span class="emoji">🗂️</span> Tüm Sayfalar</div>
+      <section id="grid" class="grid"></section>
+    </div>
 
     <footer>
       GitHub Pages + GitHub API ile otomatik oluşturuldu.
@@ -560,29 +547,56 @@
     const repo = "ahmetbilgic.github.io";
 
     const grid = document.getElementById("grid");
+    const favoritesGrid = document.getElementById("favoritesGrid");
+    const favoritesSection = document.getElementById("favoritesSection");
+    const allSection = document.getElementById("allSection");
     const statusEl = document.getElementById("status");
     const errorEl = document.getElementById("error");
     const pageCountEl = document.getElementById("pageCount");
-    const refreshTimeEl = document.getElementById("refreshTime");
     const searchInput = document.getElementById("searchInput");
     const sortSelect = document.getElementById("sortSelect");
-    const chipsEl = document.getElementById("chips");
     const themeToggle = document.getElementById("themeToggle");
 
     let pages = [];
-    let currentCategory = "Tümü";
 
-    const gradients = {
-      "CV / Profil": "linear-gradient(135deg, #3b82f6, #7c3aed)",
-      "Proje": "linear-gradient(135deg, #0ea5e9, #14b8a6)",
-      "Hesap / Araç": "linear-gradient(135deg, #f59e0b, #ef4444)",
-      "Grafik / Veri": "linear-gradient(135deg, #8b5cf6, #ec4899)",
-      "İletişim": "linear-gradient(135deg, #22c55e, #06b6d4)",
-      "Galeri / Medya": "linear-gradient(135deg, #ec4899, #f97316)",
-      "Yazı / Not": "linear-gradient(135deg, #6366f1, #3b82f6)",
-      "Test / Deneme": "linear-gradient(135deg, #ef4444, #f59e0b)",
-      "Diğer": "linear-gradient(135deg, #64748b, #334155)"
-    };
+    const gradients = [
+      "linear-gradient(135deg, #3b82f6, #7c3aed)",
+      "linear-gradient(135deg, #0ea5e9, #14b8a6)",
+      "linear-gradient(135deg, #f59e0b, #ef4444)",
+      "linear-gradient(135deg, #8b5cf6, #ec4899)",
+      "linear-gradient(135deg, #22c55e, #06b6d4)",
+      "linear-gradient(135deg, #ec4899, #f97316)",
+      "linear-gradient(135deg, #6366f1, #3b82f6)",
+      "linear-gradient(135deg, #64748b, #334155)"
+    ];
+
+    function getFavorites() {
+      try {
+        return JSON.parse(localStorage.getItem("favorite-pages") || "[]");
+      } catch {
+        return [];
+      }
+    }
+
+    function saveFavorites(list) {
+      localStorage.setItem("favorite-pages", JSON.stringify(list));
+    }
+
+    function isFavorite(fileName) {
+      return getFavorites().includes(fileName);
+    }
+
+    function toggleFavorite(fileName) {
+      const favorites = getFavorites();
+      const exists = favorites.includes(fileName);
+
+      const next = exists
+        ? favorites.filter(name => name !== fileName)
+        : [...favorites, fileName];
+
+      saveFavorites(next);
+      render();
+    }
 
     function formatSize(bytes) {
       if (bytes < 1024) return bytes + " B";
@@ -602,13 +616,6 @@
       }).format(d);
     }
 
-    function formatTimeOnly(date = new Date()) {
-      return new Intl.DateTimeFormat("tr-TR", {
-        hour: "2-digit",
-        minute: "2-digit"
-      }).format(date);
-    }
-
     function prettifyName(name) {
       return name
         .replace(/\.html$/i, "")
@@ -616,47 +623,24 @@
         .replace(/\b\w/g, m => m.toUpperCase());
     }
 
-    function detectCategory(fileName) {
+    function getIcon(fileName) {
       const n = fileName.toLowerCase();
-
-      if (n.includes("cv") || n.includes("resume") || n.includes("about") || n.includes("hakkimda") || n.includes("profile")) {
-        return "CV / Profil";
-      }
-      if (n.includes("project") || n.includes("proje") || n.includes("portfolio") || n.includes("work")) {
-        return "Proje";
-      }
-      if (n.includes("calc") || n.includes("hesap") || n.includes("tool") || n.includes("converter")) {
-        return "Hesap / Araç";
-      }
-      if (n.includes("grafik") || n.includes("chart") || n.includes("dashboard") || n.includes("data")) {
-        return "Grafik / Veri";
-      }
-      if (n.includes("contact") || n.includes("iletisim") || n.includes("mail")) {
-        return "İletişim";
-      }
-      if (n.includes("gallery") || n.includes("photo") || n.includes("video") || n.includes("media") || n.includes("galeri")) {
-        return "Galeri / Medya";
-      }
-      if (n.includes("blog") || n.includes("note") || n.includes("docs") || n.includes("article") || n.includes("yazi")) {
-        return "Yazı / Not";
-      }
-      if (n.includes("test") || n.includes("demo") || n.includes("trial") || n.includes("sample")) {
-        return "Test / Deneme";
-      }
-      return "Diğer";
+      if (n.includes("cv") || n.includes("resume")) return "👤";
+      if (n.includes("about") || n.includes("hakkimda") || n.includes("profile")) return "🙋";
+      if (n.includes("project") || n.includes("proje") || n.includes("portfolio") || n.includes("work")) return "🚀";
+      if (n.includes("calc") || n.includes("hesap") || n.includes("tool") || n.includes("converter")) return "🧮";
+      if (n.includes("grafik") || n.includes("chart") || n.includes("dashboard") || n.includes("data")) return "📊";
+      if (n.includes("contact") || n.includes("iletisim") || n.includes("mail")) return "📬";
+      if (n.includes("gallery") || n.includes("photo") || n.includes("video") || n.includes("media") || n.includes("galeri")) return n.includes("video") ? "🎬" : "🖼️";
+      if (n.includes("blog") || n.includes("note") || n.includes("docs") || n.includes("article") || n.includes("yazi")) return "✍️";
+      if (n.includes("test") || n.includes("demo") || n.includes("trial") || n.includes("sample")) return "🧪";
+      return "🌐";
     }
 
-    function getIcon(category, fileName) {
-      const n = fileName.toLowerCase();
-      if (category === "CV / Profil") return n.includes("cv") ? "👤" : "🙋";
-      if (category === "Proje") return "🚀";
-      if (category === "Hesap / Araç") return "🧮";
-      if (category === "Grafik / Veri") return "📊";
-      if (category === "İletişim") return "📬";
-      if (category === "Galeri / Medya") return n.includes("video") ? "🎬" : "🖼️";
-      if (category === "Yazı / Not") return "✍️";
-      if (category === "Test / Deneme") return "🧪";
-      return "🌐";
+    function getGradientFromName(fileName) {
+      let sum = 0;
+      for (let i = 0; i < fileName.length; i++) sum += fileName.charCodeAt(i);
+      return gradients[sum % gradients.length];
     }
 
     async function getLastCommitDate(path) {
@@ -667,36 +651,24 @@
       return data?.[0]?.commit?.committer?.date || null;
     }
 
-    function renderChips() {
-      const categories = ["Tümü", ...new Set(pages.map(p => p.category))];
-      chipsEl.innerHTML = "";
-
-      categories.forEach(cat => {
-        const btn = document.createElement("button");
-        btn.className = "chip" + (cat === currentCategory ? " active" : "");
-        const count = cat === "Tümü" ? pages.length : pages.filter(p => p.category === cat).length;
-        btn.textContent = `${cat} (${count})`;
-        btn.onclick = () => {
-          currentCategory = cat;
-          renderChips();
-          render();
-        };
-        chipsEl.appendChild(btn);
-      });
-    }
-
     function sortPages(list) {
       const sorted = [...list];
       const mode = sortSelect.value;
 
       sorted.sort((a, b) => {
-        if (mode === "updated-desc") return (new Date(b.updated || 0)) - (new Date(a.updated || 0));
-        if (mode === "updated-asc") return (new Date(a.updated || 0)) - (new Date(b.updated || 0));
         if (mode === "name-asc") return a.pretty.localeCompare(b.pretty, "tr");
         if (mode === "name-desc") return b.pretty.localeCompare(a.pretty, "tr");
+        if (mode === "updated-desc") return (new Date(b.updated || 0)) - (new Date(a.updated || 0));
+        if (mode === "updated-asc") return (new Date(a.updated || 0)) - (new Date(b.updated || 0));
         if (mode === "size-desc") return b.size - a.size;
         if (mode === "size-asc") return a.size - b.size;
-        return 0;
+        if (mode === "favorites") {
+          const favA = isFavorite(a.name) ? 1 : 0;
+          const favB = isFavorite(b.name) ? 1 : 0;
+          if (favA !== favB) return favB - favA;
+          return a.pretty.localeCompare(b.pretty, "tr");
+        }
+        return a.pretty.localeCompare(b.pretty, "tr");
       });
 
       return sorted;
@@ -707,15 +679,10 @@
 
       let result = [...pages];
 
-      if (currentCategory !== "Tümü") {
-        result = result.filter(p => p.category === currentCategory);
-      }
-
       if (q) {
         result = result.filter(p =>
           p.name.toLowerCase().includes(q) ||
-          p.pretty.toLowerCase().includes(q) ||
-          p.category.toLowerCase().includes(q)
+          p.pretty.toLowerCase().includes(q)
         );
       }
 
@@ -728,10 +695,15 @@
       a.href = page.name;
       a.style.animationDelay = `${index * 0.04}s`;
 
+      const fav = isFavorite(page.name);
+
       a.innerHTML = `
+        <button class="favorite-btn ${fav ? "active" : ""}" data-file="${page.name}" type="button" aria-label="Favori">
+          ${fav ? "★" : "☆"}
+        </button>
+
         <div class="thumb" style="background:${page.gradient}">
           <div class="thumb-left">
-            <span class="thumb-tag">${page.category}</span>
             <div class="thumb-title">${page.pretty}</div>
           </div>
           <div class="thumb-icon">${page.icon}</div>
@@ -743,7 +715,6 @@
         <div class="meta">
           <div class="meta-row">📦 <span>Dosya boyutu: ${formatSize(page.size)}</span></div>
           <div class="meta-row">🕒 <span>Son güncelleme: ${formatDate(page.updated)}</span></div>
-          <div class="meta-row">🏷️ <span>Kategori: ${page.category}</span></div>
         </div>
 
         <div class="open-row">
@@ -751,26 +722,48 @@
           <span class="mini">HTML sayfası</span>
         </div>
       `;
+
+      const favBtn = a.querySelector(".favorite-btn");
+      favBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleFavorite(page.name);
+      });
+
       return a;
     }
 
     function render() {
       const visible = getFilteredPages();
+      const favoriteNames = getFavorites();
+
+      const favoritePages = visible.filter(page => favoriteNames.includes(page.name));
+      const normalPages = visible.filter(page => !favoriteNames.includes(page.name));
+
       grid.innerHTML = "";
+      favoritesGrid.innerHTML = "";
 
       pageCountEl.textContent = visible.length;
 
       if (visible.length === 0) {
-        statusEl.textContent = "Bu filtreye uygun sayfa bulunamadı.";
+        statusEl.textContent = "Bu aramaya uygun sayfa bulunamadı.";
         statusEl.classList.remove("hidden");
-        grid.classList.add("hidden");
+        favoritesSection.classList.add("hidden");
+        allSection.classList.add("hidden");
         return;
       }
 
       statusEl.classList.add("hidden");
-      grid.classList.remove("hidden");
 
-      visible.forEach((page, i) => grid.appendChild(createCard(page, i)));
+      if (favoritePages.length > 0) {
+        favoritesSection.classList.remove("hidden");
+        favoritePages.forEach((page, i) => favoritesGrid.appendChild(createCard(page, i)));
+      } else {
+        favoritesSection.classList.add("hidden");
+      }
+
+      allSection.classList.remove("hidden");
+      normalPages.forEach((page, i) => grid.appendChild(createCard(page, i)));
     }
 
     function setTheme(theme) {
@@ -812,32 +805,30 @@
         if (htmlFiles.length === 0) {
           statusEl.textContent = "Listelenecek HTML dosyası bulunamadı.";
           pageCountEl.textContent = "0";
-          refreshTimeEl.textContent = formatTimeOnly();
+          favoritesSection.classList.add("hidden");
+          allSection.classList.add("hidden");
           return;
         }
 
         pages = await Promise.all(
           htmlFiles.map(async (file) => {
-            const category = detectCategory(file.name);
             const updated = await getLastCommitDate(file.name);
             return {
               name: file.name,
               pretty: prettifyName(file.name),
               size: file.size || 0,
               updated,
-              category,
-              icon: getIcon(category, file.name),
-              gradient: gradients[category] || gradients["Diğer"]
+              icon: getIcon(file.name),
+              gradient: getGradientFromName(file.name)
             };
           })
         );
 
-        renderChips();
         render();
-        refreshTimeEl.textContent = formatTimeOnly();
       } catch (err) {
         statusEl.classList.add("hidden");
-        grid.classList.add("hidden");
+        favoritesSection.classList.add("hidden");
+        allSection.classList.add("hidden");
         errorEl.classList.remove("hidden");
         errorEl.textContent = "Sayfalar yüklenemedi. Kullanıcı adı, repo adı veya GitHub API limiti kaynaklı geçici bir sorun olabilir.";
         console.error(err);
