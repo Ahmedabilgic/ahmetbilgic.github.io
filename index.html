@@ -395,19 +395,6 @@
       word-break: break-word;
     }
 
-    .meta {
-      display: grid;
-      gap: 10px;
-    }
-
-    .meta-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 14px;
-      color: var(--muted);
-    }
-
     .open-row {
       margin-top: auto;
       display: flex;
@@ -516,10 +503,6 @@
           <option value="name-asc" selected>İsim A-Z</option>
           <option value="name-desc">İsim Z-A</option>
           <option value="favorites">Önce Favoriler</option>
-          <option value="updated-desc">En yeni güncellenen</option>
-          <option value="updated-asc">En eski güncellenen</option>
-          <option value="size-desc">Boyut büyükten küçüğe</option>
-          <option value="size-asc">Boyut küçükten büyüğe</option>
         </select>
       </div>
     </section>
@@ -570,6 +553,59 @@
       "linear-gradient(135deg, #64748b, #334155)"
     ];
 
+    const turkishMap = {
+      "coklu": "Çoklu",
+      "kolaj": "Kolaj",
+      "olustur": "Oluştur",
+      "olusturma": "Oluşturma",
+      "nobet": "Nöbet",
+      "ozeti": "Özeti",
+      "ozet": "Özet",
+      "gorev": "Görev",
+      "takvim": "Takvim",
+      "hakkimda": "Hakkımda",
+      "iletisim": "İletişim",
+      "anasayfa": "Anasayfa",
+      "sayfa": "Sayfa",
+      "arac": "Araç",
+      "araci": "Aracı",
+      "yardimci": "Yardımcı",
+      "yapayzeka": "Yapay Zeka",
+      "zeka": "Zeka",
+      "deneysel": "Deneysel",
+      "calisma": "Çalışma",
+      "alani": "Alanı",
+      "gorsel": "Görsel",
+      "resim": "Resim",
+      "fotograf": "Fotoğraf",
+      "video": "Video",
+      "muzik": "Müzik",
+      "sarki": "Şarkı",
+      "hikaye": "Hikaye",
+      "siir": "Şiir",
+      "oyun": "Oyun",
+      "rapor": "Rapor",
+      "veri": "Veri",
+      "grafik": "Grafik",
+      "analiz": "Analiz",
+      "hesap": "Hesap",
+      "hesapla": "Hesapla",
+      "donusturucu": "Dönüştürücü",
+      "cevirici": "Çevirici",
+      "notlar": "Notlar",
+      "not": "Not",
+      "gunluk": "Günlük",
+      "galeri": "Galeri",
+      "sunum": "Sunum",
+      "liste": "Liste",
+      "takip": "Takip",
+      "plan": "Plan",
+      "proje": "Proje",
+      "deneme": "Deneme",
+      "test": "Test",
+      "ozel": "Özel"
+    };
+
     function getFavorites() {
       try {
         return JSON.parse(localStorage.getItem("favorite-pages") || "[]");
@@ -598,42 +634,53 @@
       render();
     }
 
-    function formatSize(bytes) {
-      if (bytes < 1024) return bytes + " B";
-      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
-      return (bytes / (1024 * 1024)).toFixed(2) + " MB";
-    }
-
-    function formatDate(dateString) {
-      if (!dateString) return "Bilinmiyor";
-      const d = new Date(dateString);
-      return new Intl.DateTimeFormat("tr-TR", {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit"
-      }).format(d);
+    function smartTitleWord(word) {
+      const lower = word.toLowerCase();
+      if (turkishMap[lower]) return turkishMap[lower];
+      return lower.charAt(0).toLocaleUpperCase("tr-TR") + lower.slice(1);
     }
 
     function prettifyName(name) {
-      return name
+      const clean = name
         .replace(/\.html$/i, "")
-        .replace(/[-_]+/g, " ")
-        .replace(/\b\w/g, m => m.toUpperCase());
+        .replace(/[_-]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      return clean
+        .split(" ")
+        .map(smartTitleWord)
+        .join(" ");
     }
 
     function getIcon(fileName) {
       const n = fileName.toLowerCase();
+
+      if (n.includes("kolaj")) return "🧩";
+      if (n.includes("nobet")) return "🩺";
+      if (n.includes("ozet") || n.includes("ozeti")) return "📝";
+      if (n.includes("takvim") || n.includes("calendar")) return "📅";
       if (n.includes("cv") || n.includes("resume")) return "👤";
       if (n.includes("about") || n.includes("hakkimda") || n.includes("profile")) return "🙋";
       if (n.includes("project") || n.includes("proje") || n.includes("portfolio") || n.includes("work")) return "🚀";
       if (n.includes("calc") || n.includes("hesap") || n.includes("tool") || n.includes("converter")) return "🧮";
       if (n.includes("grafik") || n.includes("chart") || n.includes("dashboard") || n.includes("data")) return "📊";
       if (n.includes("contact") || n.includes("iletisim") || n.includes("mail")) return "📬";
-      if (n.includes("gallery") || n.includes("photo") || n.includes("video") || n.includes("media") || n.includes("galeri")) return n.includes("video") ? "🎬" : "🖼️";
-      if (n.includes("blog") || n.includes("note") || n.includes("docs") || n.includes("article") || n.includes("yazi")) return "✍️";
-      if (n.includes("test") || n.includes("demo") || n.includes("trial") || n.includes("sample")) return "🧪";
+      if (n.includes("gallery") || n.includes("galeri")) return "🖼️";
+      if (n.includes("photo") || n.includes("fotograf") || n.includes("image") || n.includes("resim")) return "📷";
+      if (n.includes("video")) return "🎬";
+      if (n.includes("music") || n.includes("muzik") || n.includes("audio") || n.includes("sarki")) return "🎵";
+      if (n.includes("blog") || n.includes("note") || n.includes("not") || n.includes("docs") || n.includes("article") || n.includes("yazi")) return "✍️";
+      if (n.includes("story") || n.includes("hikaye")) return "📖";
+      if (n.includes("siir")) return "📜";
+      if (n.includes("test") || n.includes("demo") || n.includes("trial") || n.includes("sample") || n.includes("deneme")) return "🧪";
+      if (n.includes("game") || n.includes("oyun")) return "🎮";
+      if (n.includes("ai") || n.includes("zeka") || n.includes("yapay")) return "🤖";
+      if (n.includes("rapor") || n.includes("report")) return "📋";
+      if (n.includes("plan")) return "🗺️";
+      if (n.includes("liste") || n.includes("list")) return "📚";
+      if (n.includes("takip")) return "📌";
+      if (n.includes("sunum") || n.includes("slide")) return "🎤";
       return "🌐";
     }
 
@@ -643,14 +690,6 @@
       return gradients[sum % gradients.length];
     }
 
-    async function getLastCommitDate(path) {
-      const url = `https://api.github.com/repos/${user}/${repo}/commits?path=${encodeURIComponent(path)}&page=1&per_page=1`;
-      const res = await fetch(url);
-      if (!res.ok) return null;
-      const data = await res.json();
-      return data?.[0]?.commit?.committer?.date || null;
-    }
-
     function sortPages(list) {
       const sorted = [...list];
       const mode = sortSelect.value;
@@ -658,10 +697,6 @@
       sorted.sort((a, b) => {
         if (mode === "name-asc") return a.pretty.localeCompare(b.pretty, "tr");
         if (mode === "name-desc") return b.pretty.localeCompare(a.pretty, "tr");
-        if (mode === "updated-desc") return (new Date(b.updated || 0)) - (new Date(a.updated || 0));
-        if (mode === "updated-asc") return (new Date(a.updated || 0)) - (new Date(b.updated || 0));
-        if (mode === "size-desc") return b.size - a.size;
-        if (mode === "size-asc") return a.size - b.size;
         if (mode === "favorites") {
           const favA = isFavorite(a.name) ? 1 : 0;
           const favB = isFavorite(b.name) ? 1 : 0;
@@ -711,11 +746,6 @@
 
         <h2>${page.pretty}</h2>
         <div class="filename">${page.name}</div>
-
-        <div class="meta">
-          <div class="meta-row">📦 <span>Dosya boyutu: ${formatSize(page.size)}</span></div>
-          <div class="meta-row">🕒 <span>Son güncelleme: ${formatDate(page.updated)}</span></div>
-        </div>
 
         <div class="open-row">
           <span class="open-badge">Sayfayı Aç →</span>
@@ -810,19 +840,14 @@
           return;
         }
 
-        pages = await Promise.all(
-          htmlFiles.map(async (file) => {
-            const updated = await getLastCommitDate(file.name);
-            return {
-              name: file.name,
-              pretty: prettifyName(file.name),
-              size: file.size || 0,
-              updated,
-              icon: getIcon(file.name),
-              gradient: getGradientFromName(file.name)
-            };
-          })
-        );
+        pages = htmlFiles.map((file) => {
+          return {
+            name: file.name,
+            pretty: prettifyName(file.name),
+            icon: getIcon(file.name),
+            gradient: getGradientFromName(file.name)
+          };
+        });
 
         render();
       } catch (err) {
