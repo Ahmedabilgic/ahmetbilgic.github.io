@@ -245,6 +245,16 @@
       padding: 12px;
       display: flex;
       align-items: center;
+      position: relative;
+    }
+
+    .sort-wrap::after {
+      content: "▾";
+      position: absolute;
+      right: 26px;
+      pointer-events: none;
+      color: var(--muted);
+      font-size: 14px;
     }
 
     .sort-wrap select {
@@ -253,9 +263,22 @@
       border: 1px solid var(--border);
       background: rgba(255,255,255,0.05);
       color: var(--text);
-      padding: 12px 14px;
+      padding: 12px 42px 12px 14px;
       font-size: 14px;
       outline: none;
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+    }
+
+    .sort-wrap select option {
+      background: #0f1b2d;
+      color: #ecf3ff;
+    }
+
+    body.light .sort-wrap select option {
+      background: #ffffff;
+      color: #102033;
     }
 
     .status,
@@ -515,7 +538,7 @@
         <select id="sortSelect">
           <option value="updated-desc">En yeni güncellenen</option>
           <option value="updated-asc">En eski güncellenen</option>
-          <option value="name-asc">İsim A-Z</option>
+          <option value="name-asc" selected>İsim A-Z</option>
           <option value="name-desc">İsim Z-A</option>
           <option value="size-desc">Boyut büyükten küçüğe</option>
           <option value="size-asc">Boyut küçükten büyüğe</option>
