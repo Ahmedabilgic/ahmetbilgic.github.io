@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kolaj Oluşturucu</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f5f6f8;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --border: #d1d5db;
+      --accent: #2563eb;
+      --input-bg: #ffffff;
+      --input-text: #1f2937;
+      --secondary-bg: #e5e7eb;
+      --secondary-text: #111827;
+      --canvas-bg: #ffffff;
+      --soft-bg: #fafafa;
+      --preview-bg: #f3f4f6;
+      --overlay: rgba(0,0,0,0.55);
+      --shadow: 0 10px 30px rgba(0,0,0,0.05);
+      --modal-shadow: 0 20px 60px rgba(0,0,0,0.25);
+      --editor-outline: rgba(37,99,235,0.9);
+      --drop-hover: #eef2ff;
+    }
+
+    html[data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #0b1220;
+      --card: #111827;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --border: #374151;
+      --accent: #60a5fa;
+      --input-bg: #1f2937;
+      --input-text: #f9fafb;
+      --secondary-bg: #374151;
+      --secondary-text: #f3f4f6;
+      --canvas-bg: #0f172a;
+      --soft-bg: #1f2937;
+      --preview-bg: #111827;
+      --overlay: rgba(0,0,0,0.7);
+      --shadow: 0 10px 30px rgba(0,0,0,0.35);
+      --modal-shadow: 0 20px 60px rgba(0,0,0,0.5);
+      --editor-outline: rgba(96,165,250,0.95);
+      --drop-hover: #1e3a8a33;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      html:not([data-theme="light"]) {
+        color-scheme: dark;
+        --bg: #0b1220;
+        --card: #111827;
+        --text: #e5e7eb;
+        --muted: #9ca3af;
+        --border: #374151;
+        --accent: #60a5fa;
+        --input-bg: #1f2937;
+        --input-text: #f9fafb;
+        --secondary-bg: #374151;
+        --secondary-text: #f3f4f6;
+        --canvas-bg: #0f172a;
+        --soft-bg: #1f2937;
+        --preview-bg: #111827;
+        --overlay: rgba(0,0,0,0.7);
+        --shadow: 0 10px 30px rgba(0,0,0,0.35);
+        --modal-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        --editor-outline: rgba(96,165,250,0.95);
+        --drop-hover: #1e3a8a33;
+      }
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Calibri, Carlito, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      transition: background-color .2s ease, color .2s ease;
+    }
+
+    .wrap {
+      max-width: 1100px;
+      margin: 32px auto;
+      padding: 0 16px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: var(--shadow);
+      transition: background-color .2s ease, border-color .2s ease, box-shadow .2s ease;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 30px;
+    }
+
+    p.desc {
+      margin: 0 0 20px;
+      color: var(--muted);
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .theme-toggle {
+      border: 1px solid var(--border);
+      background: transparent;
+      padding: 0;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: var(--shadow);
+    }
+
+    .theme-toggle-track {
+      width: 68px;
+      height: 38px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      padding: 4px;
+      position: relative;
+      transition: background .25s ease;
+      display: block;
+    }
+
+    .theme-toggle-thumb {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #ffffff, #e5e7eb);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transform: translateX(0);
+      transition: transform .25s ease, background .25s ease;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.18);
+      position: relative;
+      overflow: hidden;
+    }
+
+    html[data-theme="light"] .theme-toggle-track {
+      background: linear-gradient(135deg, #bfdbfe, #dbeafe);
+    }
+
+    html[data-theme="light"] .theme-toggle-thumb {
+      transform: translateX(30px);
+      background: linear-gradient(135deg, #ffffff, #f8fafc);
+    }
+
+    html:not([data-theme="light"]) .theme-toggle-track {
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      html:not([data-theme="light"]) .theme-toggle-track {
+        background: linear-gradient(135deg, #0f172a, #1e293b);
+      }
+    }
+
+    .theme-icon {
+      position: absolute;
+      font-size: 14px;
+      line-height: 1;
+      transition: opacity .2s ease, transform .25s ease;
+      user-select: none;
+    }
+
+    .theme-icon-sun {
+      opacity: 0;
+      transform: translateY(8px) scale(0.75);
+    }
+
+    .theme-icon-moon {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    html[data-theme="light"] .theme-icon-sun {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    html[data-theme="light"] .theme-icon-moon {
+      opacity: 0;
+      transform: translateY(-8px) scale(0.75);
+    }
+
+    .theme-toggle:hover {
+      filter: none;
+      transform: translateY(-1px);
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .field label {
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    input[type="file"],
+    input[type="range"],
+    select {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font: inherit;
+      background: var(--input-bg);
+      color: var(--input-text);
+    }
+
+    input[type="range"] {
+      padding: 0;
+    }
+
+    .files {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 12px;
+      padding: 12px 18px;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      transition: filter .2s ease, background-color .2s ease, color .2s ease;
+    }
+
+    button:hover {
+      filter: brightness(1.03);
+    }
+
+    .primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    .secondary {
+      background: var(--secondary-bg);
+      color: var(--secondary-text);
+    }
+
+    canvas {
+      width: 100%;
+      max-width: 100%;
+      background: var(--canvas-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      display: block;
+      transition: background-color .2s ease, border-color .2s ease;
+    }
+
+    .hint {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 800px) {
+      .controls,
+      .files {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="topbar">
+        <div>
+          <h1>2x2 Kolaj Oluşturucu</h1>
+          <p class="desc">4 fotoğraf yükle, başlığı yaz, ardından kolajı oluştur ve JPG olarak indir.</p>
+        </div>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Temayı değiştir" title="Temayı değiştir">
+          <span class="theme-toggle-track">
+            <span class="theme-toggle-thumb">
+              <span class="theme-icon theme-icon-sun">☀️</span>
+              <span class="theme-icon theme-icon-moon">🌙</span>
+            </span>
+          </span>
+        </button>
+      </div>
+
+      <div class="controls">
+        <div class="field">
+          <label for="titleInput">Başlık</label>
+          <input id="titleInput" type="text" value="Cihaz 1 - 1. Seviye" />
+        </div>
+
+        <div class="field">
+          <label for="cornerRadius">Köşe yuvarlama</label>
+          <input id="cornerRadius" type="number" min="0" max="100" value="25" />
+        </div>
+
+        <div class="field">
+          <label for="targetWidthSelect">Çıktı çözünürlüğü</label>
+          <select id="targetWidthSelect">
+            <option value="900">900 px</option>
+            <option value="1400" selected>1400 px</option>
+            <option value="1800">1800 px</option>
+            <option value="2200">2200 px</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="exportFormat">Çıktı formatı</label>
+          <select id="exportFormat">
+            <option value="png" selected>PNG (kayıpsız)</option>
+            <option value="jpeg">JPG (%100 kalite)</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="batchColumns">Toplu üretim sütun sayısı</label>
+          <select id="batchColumns">
+            <option value="2" selected>2 sütun</option>
+            <option value="1">1 sütun</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="autoHeadline">Başlığa EXIF tarihi ekle</label>
+          <select id="autoHeadline">
+            <option value="off" selected>Kapalı</option>
+            <option value="on">Açık</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="dropZone" style="border:2px dashed var(--border); border-radius:14px; padding:30px; text-align:center; margin-bottom:20px; background:var(--soft-bg); transition:background-color .2s ease, border-color .2s ease;">
+        <strong>Fotoğrafları buraya sürükleyip bırak</strong><br>
+        <span style="color:var(--muted); font-size:14px;">4 fotoğrafı aynı anda sayfaya bırakabilirsin</span>
+      </div>
+
+      <div id="thumbGrid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px;"></div>
+
+      <div id="cropControls" style="display:none; border:1px solid var(--border); border-radius:14px; padding:16px; margin-bottom:20px; background:var(--card); transition:background-color .2s ease, border-color .2s ease;">
+        <div style="font-weight:700; margin-bottom:10px;">Seçili fotoğrafı düzenle</div>
+        <div style="display:flex; flex-wrap:wrap; gap:12px; margin-bottom:12px;">
+          <button id="openEditorBtn" type="button" class="primary">Büyük Düzenleyicide Aç</button>
+          <button id="resetCropBtn" type="button" class="secondary">Kırpmayı Sıfırla</button>
+        </div>
+        <div style="color:var(--muted); font-size:14px;">Daha rahat çalışmak için büyük düzenleyiciyi aç. Orada fare tekerleği ile zoom yapabilir, görseli sürükleyebilir ve tam istediğin kadrajı ayarlayabilirsin.</div>
+      </div>
+
+      <div id="editorModal" style="display:none; position:fixed; inset:0; background:var(--overlay); z-index:1000; align-items:center; justify-content:center; padding:24px; transition:background-color .2s ease;">
+        <div style="background:var(--card); color:var(--text); width:min(980px, 100%); border-radius:18px; padding:18px; box-shadow:var(--modal-shadow); transition:background-color .2s ease, color .2s ease;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; gap:12px;">
+            <div>
+              <div style="font-weight:700; font-size:18px;">Fotoğraf Düzenleyici</div>
+              <div id="editorLabel" style="color:var(--muted); font-size:14px;">Seçili fotoğraf</div>
+            </div>
+            <button id="closeEditorBtn" type="button" class="secondary">Kapat</button>
+          </div>
+
+          <div style="display:grid; grid-template-columns: 1fr 280px; gap:16px; align-items:start;">
+            <div>
+              <canvas id="editorCanvas" width="900" height="520" style="width:100%; background:var(--preview-bg); border:1px solid var(--border); border-radius:14px; display:block;"></canvas>
+              <div style="margin-top:10px; color:var(--muted); font-size:14px;">
+                Fare ile sürükle = konum değiştir • Mouse tekerleği = yakınlaştır/uzaklaştır • Çift tık = sıfırla
+              </div>
+            </div>
+
+            <div style="border:1px solid var(--border); border-radius:14px; padding:14px; background:var(--soft-bg); transition:background-color .2s ease, border-color .2s ease;">
+              <div class="field" style="margin-bottom:12px;">
+                <label for="zoomRange">Yakınlaştırma</label>
+                <input id="zoomRange" type="range" min="1" max="4" step="0.01" value="1" />
+              </div>
+              <div class="field" style="margin-bottom:12px;">
+                <label>Kısa Yol</label>
+                <div style="font-size:14px; color:var(--muted); line-height:1.5;">Mouse tekerleği ile daha hassas zoom yapabilirsin.</div>
+              </div>
+              <div style="display:flex; flex-direction:column; gap:10px;">
+                <button id="fitEditorBtn" type="button" class="secondary">Sığdır / Sıfırla</button>
+                <button id="applyEditorBtn" type="button" class="primary">Kadrajı Uygula</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="primary" id="generateBtn">Kolajı Oluştur</button>
+        <button class="secondary" id="downloadBtn">Çıktıyı İndir</button>
+        <button class="secondary" id="pdfBtn">PDF İndir</button>
+      </div>
+
+      <canvas id="previewCanvas"></canvas>
+      <div class="hint">
+        Sistem 4 fotoğrafı 2x2 yerleştirir, mümkün olduğunca az kırpar, hafif yuvarlatılmış köşe uygular ve başlığı üstte ortalar. Küçük önizlemeleri sürükleyerek sıralamayı değiştirebilirsin.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const titleInput = document.getElementById('titleInput');
+    const cornerRadiusInput = document.getElementById('cornerRadius');
+    const targetWidthSelect = document.getElementById('targetWidthSelect');
+    const exportFormatSelect = document.getElementById('exportFormat');
+    const autoHeadlineSelect = document.getElementById('autoHeadline');
+    let droppedFiles = [];
+    let cropStates = [];
+    let dragIndex = null;
+    let selectedIndex = null;
+    let cropDrag = null;
+    let editorImage = null;
+    let editorDrag = null;
+    let tempCropState = null;
+    const generateBtn = document.getElementById('generateBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const canvas = document.getElementById('previewCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const config = {
+      targetWidth: 1400,
+      padding: 30,
+      titleSpace: 120,
+      titleFontSize: 58,
+      titleBandHeight: 70,
+      background: '#ffffff'
+    };
+
+    async function getExifDate(file) {
+      try {
+        const buffer = await file.arrayBuffer();
+        const view = new DataView(buffer);
+        if (view.getUint16(0, false) !== 0xFFD8) return null;
+        let offset = 2;
+        while (offset < view.byteLength) {
+          const marker = view.getUint16(offset, false);
+          offset += 2;
+          if (marker === 0xFFE1) {
+            const size = view.getUint16(offset, false);
+            offset += 2;
+            const exifHeader = new TextDecoder().decode(new Uint8Array(buffer, offset, 6));
+            if (exifHeader !== 'Exif\u0000\u0000') return null;
+            const tiff = offset + 6;
+            const little = view.getUint16(tiff, false) === 0x4949;
+            const get16 = (o) => view.getUint16(o, little);
+            const get32 = (o) => view.getUint32(o, little);
+            const ifd0 = tiff + get32(tiff + 4);
+            const entries = get16(ifd0);
+            for (let i = 0; i < entries; i++) {
+              const entry = ifd0 + 2 + i * 12;
+              const tag = get16(entry);
+              if (tag === 0x8769) {
+                const exifIfd = tiff + get32(entry + 8);
+                const exifEntries = get16(exifIfd);
+                for (let j = 0; j < exifEntries; j++) {
+                  const exifEntry = exifIfd + 2 + j * 12;
+                  const exifTag = get16(exifEntry);
+                  if (exifTag === 0x9003 || exifTag === 0x0132) {
+                    const count = get32(exifEntry + 4);
+                    const valueOffset = tiff + get32(exifEntry + 8);
+                    const bytes = new Uint8Array(buffer, valueOffset, count - 1);
+                    return new TextDecoder().decode(bytes).replace(/:/g, '-').replace(' ', ' ');
+                  }
+                }
+              }
+            }
+            return null;
+          }
+          const size = view.getUint16(offset, false);
+          offset += size;
+        }
+      } catch (e) {
+        return null;
+      }
+      return null;
+    }
+
+    function loadImageFromFile(file) {
+      return new Promise((resolve, reject) => {
+        if (!file) {
+          reject(new Error('Eksik dosya'));
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = () => {
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.onerror = () => reject(new Error('Görsel yüklenemedi'));
+          img.src = reader.result;
+        };
+        reader.onerror = () => reject(new Error('Dosya okunamadı'));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function fitToWidth(img, targetWidth) {
+      const scale = targetWidth / img.width;
+      return {
+        width: targetWidth,
+        height: Math.round(img.height * scale)
+      };
+    }
+
+    function drawRoundedImage(ctx, img, x, y, w, h, radius, crop = null) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.lineTo(x + w - radius, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
+      ctx.lineTo(x + w, y + h - radius);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+      ctx.lineTo(x + radius, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
+      ctx.lineTo(x, y + radius);
+      ctx.quadraticCurveTo(x, y, x + radius, y);
+      ctx.closePath();
+      ctx.clip();
+      if (!crop) {
+        ctx.drawImage(img, x, y, w, h);
+      } else {
+        const scale = crop.zoom;
+        const sw = img.width / scale;
+        const sh = img.height / scale;
+        const sx = Math.max(0, Math.min(img.width - sw, crop.x * (img.width - sw)));
+        const sy = Math.max(0, Math.min(img.height - sh, crop.y * (img.height - sh)));
+        ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+      }
+      ctx.restore();
+    }
+
+    async function generateCollage() {
+      const files = droppedFiles;
+      if (!files || files.length !== 4) {
+        alert('Lütfen sayfaya tam olarak 4 fotoğraf sürükleyip bırakın.');
+        return;
+      }
+
+      try {
+        config.targetWidth = Number(targetWidthSelect.value || 1400);
+        const images = await Promise.all(files.map(loadImageFromFile));
+        const resized = images.map(img => ({ img, ...fitToWidth(img, config.targetWidth) }));
+
+        const row1Height = Math.max(resized[0].height, resized[1].height);
+        const row2Height = Math.max(resized[2].height, resized[3].height);
+
+        const canvasWidth = config.targetWidth * 2 + config.padding * 3;
+        const canvasHeight = row1Height + row2Height + config.padding * 3 + config.titleSpace;
+
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
+
+        ctx.fillStyle = config.background;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        const radius = Math.max(0, Number(cornerRadiusInput.value) || 0);
+        const y1 = config.padding + config.titleSpace;
+        const y2 = y1 + row1Height + config.padding;
+        const x1 = config.padding;
+        const x2 = config.padding * 2 + config.targetWidth;
+
+        drawRoundedImage(ctx, resized[0].img, x1, y1, resized[0].width, resized[0].height, radius, cropStates[0]);
+        drawRoundedImage(ctx, resized[1].img, x2, y1, resized[1].width, resized[1].height, radius, cropStates[1]);
+        drawRoundedImage(ctx, resized[2].img, x1, y2, resized[2].width, resized[2].height, radius, cropStates[2]);
+        drawRoundedImage(ctx, resized[3].img, x2, y2, resized[3].width, resized[3].height, radius, cropStates[3]);
+
+        let title = titleInput.value.trim() || 'Başlıksız';
+        if (autoHeadlineSelect.value === 'on') {
+          const exifDate = await getExifDate(files[0]);
+          if (exifDate) title = `${title} - ${exifDate}`;
+        }
+        ctx.fillStyle = '#000000';
+        ctx.font = `${config.titleFontSize}px Calibri, Carlito, Arial, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        const titleY = config.padding + Math.max(0, (config.titleBandHeight - config.titleFontSize) / 2);
+        ctx.fillText(title, canvas.width / 2, titleY);
+      } catch (error) {
+        console.error(error);
+        alert('Kolaj oluşturulurken bir hata oluştu.');
+      }
+    }
+
+    function downloadJpg() {
+      if (!canvas.width || !canvas.height) {
+        alert('Önce kolajı oluşturun.');
+        return;
+      }
+      const link = document.createElement('a');
+      const safeTitle = (titleInput.value.trim() || 'kolaj')
+        .toLowerCase()
+        .replace(/[^a-z0-9çğıöşü\s-]/gi, '')
+        .replace(/\s+/g, '_');
+      const format = exportFormatSelect.value;
+      link.download = `${safeTitle}.${format === 'png' ? 'png' : 'jpg'}`;
+      link.href = format === 'png'
+        ? canvas.toDataURL('image/png')
+        : canvas.toDataURL('image/jpeg', 1.0);
+      link.click();
+    }
+
+    function renderThumbs() {
+      const thumbGrid = document.getElementById('thumbGrid');
+      thumbGrid.innerHTML = '';
+
+      const labels = ['Fotoğraf 1 (sol üst)', 'Fotoğraf 2 (sağ üst)', 'Fotoğraf 3 (sol alt)', 'Fotoğraf 4 (sağ alt)'];
+
+      droppedFiles.forEach((file, index) => {
+        const card = document.createElement('div');
+        card.draggable = true;
+        card.style.border = selectedIndex === index ? '2px solid var(--accent)' : '1px solid var(--border)';
+        card.style.borderRadius = '12px';
+        card.style.padding = '12px';
+        card.style.background = 'var(--card)';
+        card.style.cursor = 'grab';
+
+        const title = document.createElement('div');
+        title.textContent = labels[index];
+        title.style.fontWeight = '600';
+        title.style.marginBottom = '8px';
+        title.style.fontSize = '14px';
+
+        const img = document.createElement('canvas');
+        img.width = 460;
+        img.height = 180;
+        img.style.width = '100%';
+        img.style.height = '180px';
+        img.style.borderRadius = '10px';
+        img.style.display = 'block';
+        img.style.marginBottom = '8px';
+        img.style.background = 'var(--preview-bg)';
+
+        const pctx = img.getContext('2d');
+        const previewImg = new Image();
+        previewImg.onload = () => {
+          const crop = cropStates[index] || { zoom: 1, x: 0.5, y: 0.5 };
+          const scale = crop.zoom;
+          const sw = previewImg.width / scale;
+          const sh = previewImg.height / scale;
+          const sx = Math.max(0, Math.min(previewImg.width - sw, crop.x * (previewImg.width - sw)));
+          const sy = Math.max(0, Math.min(previewImg.height - sh, crop.y * (previewImg.height - sh)));
+          pctx.clearRect(0, 0, img.width, img.height);
+          pctx.drawImage(previewImg, sx, sy, sw, sh, 0, 0, img.width, img.height);
+        };
+        previewImg.src = URL.createObjectURL(file);
+
+        const name = document.createElement('div');
+        name.textContent = file.name;
+        name.style.fontSize = '13px';
+        name.style.color = 'var(--muted)';
+        name.style.wordBreak = 'break-all';
+
+        card.appendChild(title);
+        card.appendChild(img);
+        card.appendChild(name);
+
+        card.addEventListener('click', () => {
+          selectedIndex = index;
+          syncCropControls();
+          renderThumbs();
+        });
+
+        card.addEventListener('dblclick', () => {
+          selectedIndex = index;
+          syncCropControls();
+          openEditor();
+        });
+
+        card.addEventListener('dragstart', () => {
+          dragIndex = index;
+        });
+
+        card.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          card.style.background = 'var(--drop-hover)';
+        });
+
+        card.addEventListener('dragleave', () => {
+          card.style.background = 'var(--card)';
+        });
+
+        card.addEventListener('drop', (e) => {
+          e.preventDefault();
+          card.style.background = 'var(--card)';
+          if (dragIndex === null || dragIndex === index) return;
+          const moved = droppedFiles.splice(dragIndex, 1)[0];
+          const movedCrop = cropStates.splice(dragIndex, 1)[0];
+          droppedFiles.splice(index, 0, moved);
+          cropStates.splice(index, 0, movedCrop);
+          if (selectedIndex === dragIndex) selectedIndex = index;
+          dragIndex = null;
+          renderThumbs();
+          syncCropControls();
+        });
+
+        thumbGrid.appendChild(card);
+      });
+    }
+
+    function syncCropControls() {
+      const cropControls = document.getElementById('cropControls');
+      if (selectedIndex === null || !cropStates[selectedIndex]) {
+        cropControls.style.display = 'none';
+        return;
+      }
+      cropControls.style.display = 'block';
+    }
+
+    function renderEditor() {
+      const editorCanvas = document.getElementById('editorCanvas');
+      const ectx = editorCanvas.getContext('2d');
+      if (!editorImage || !tempCropState) return;
+
+      ectx.clearRect(0, 0, editorCanvas.width, editorCanvas.height);
+      ectx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--preview-bg').trim() || '#f3f4f6';
+      ectx.fillRect(0, 0, editorCanvas.width, editorCanvas.height);
+
+      const crop = tempCropState;
+      const scale = crop.zoom;
+      const sw = editorImage.width / scale;
+      const sh = editorImage.height / scale;
+      const sx = Math.max(0, Math.min(editorImage.width - sw, crop.x * (editorImage.width - sw)));
+      const sy = Math.max(0, Math.min(editorImage.height - sh, crop.y * (editorImage.height - sh)));
+
+      ectx.drawImage(editorImage, sx, sy, sw, sh, 0, 0, editorCanvas.width, editorCanvas.height);
+
+      ectx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--editor-outline').trim() || 'rgba(37,99,235,0.9)';
+      ectx.lineWidth = 3;
+      ectx.strokeRect(1.5, 1.5, editorCanvas.width - 3, editorCanvas.height - 3);
+    }
+
+    function openEditor() {
+      if (selectedIndex === null || !droppedFiles[selectedIndex]) return;
+      const modal = document.getElementById('editorModal');
+      const label = document.getElementById('editorLabel');
+      const zoomRange = document.getElementById('zoomRange');
+      const labels = ['Fotoğraf 1 (sol üst)', 'Fotoğraf 2 (sağ üst)', 'Fotoğraf 3 (sol alt)', 'Fotoğraf 4 (sağ alt)'];
+
+      tempCropState = { ...cropStates[selectedIndex] };
+      zoomRange.value = tempCropState.zoom;
+      label.textContent = labels[selectedIndex];
+
+      const file = droppedFiles[selectedIndex];
+      const img = new Image();
+      img.onload = () => {
+        editorImage = img;
+        renderEditor();
+      };
+      img.src = URL.createObjectURL(file);
+
+      modal.style.display = 'flex';
+    }
+
+    function closeEditor() {
+      document.getElementById('editorModal').style.display = 'none';
+      editorImage = null;
+      editorDrag = null;
+      tempCropState = null;
+    }
+
+    generateBtn.addEventListener('click', generateCollage);
+
+    document.getElementById('openEditorBtn').addEventListener('click', openEditor);
+    document.getElementById('closeEditorBtn').addEventListener('click', closeEditor);
+
+    document.getElementById('resetCropBtn').addEventListener('click', () => {
+      if (selectedIndex === null) return;
+      cropStates[selectedIndex] = { zoom: 1, x: 0.5, y: 0.5 };
+      renderThumbs();
+    });
+
+    document.getElementById('fitEditorBtn').addEventListener('click', () => {
+      if (!tempCropState) return;
+      tempCropState = { zoom: 1, x: 0.5, y: 0.5 };
+      document.getElementById('zoomRange').value = 1;
+      renderEditor();
+    });
+
+    document.getElementById('applyEditorBtn').addEventListener('click', () => {
+      if (selectedIndex === null || !tempCropState) return;
+      cropStates[selectedIndex] = { ...tempCropState };
+      renderThumbs();
+      closeEditor();
+    });
+
+    document.getElementById('zoomRange').addEventListener('input', (e) => {
+      if (!tempCropState) return;
+      tempCropState.zoom = Number(e.target.value);
+      renderEditor();
+    });
+
+    const editorCanvas = document.getElementById('editorCanvas');
+
+    editorCanvas.addEventListener('mousedown', (e) => {
+      if (!tempCropState) return;
+      editorDrag = { startX: e.clientX, startY: e.clientY };
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!editorDrag || !tempCropState) return;
+      const sensitivity = 0.0015 / Math.max(1, tempCropState.zoom * 0.7);
+      tempCropState.x = Math.max(0, Math.min(1, tempCropState.x - (e.clientX - editorDrag.startX) * sensitivity));
+      tempCropState.y = Math.max(0, Math.min(1, tempCropState.y - (e.clientY - editorDrag.startY) * sensitivity));
+      editorDrag.startX = e.clientX;
+      editorDrag.startY = e.clientY;
+      renderEditor();
+    });
+
+    document.addEventListener('mouseup', () => {
+      editorDrag = null;
+    });
+
+    editorCanvas.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      if (!tempCropState) return;
+      const nextZoom = Math.max(1, Math.min(4, tempCropState.zoom + (e.deltaY < 0 ? 0.08 : -0.08)));
+      tempCropState.zoom = Number(nextZoom.toFixed(2));
+      document.getElementById('zoomRange').value = tempCropState.zoom;
+      renderEditor();
+    });
+
+    editorCanvas.addEventListener('dblclick', () => {
+      if (!tempCropState) return;
+      tempCropState = { zoom: 1, x: 0.5, y: 0.5 };
+      document.getElementById('zoomRange').value = 1;
+      renderEditor();
+    });
+
+    const dropZone = document.getElementById('dropZone');
+
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.style.background = 'var(--drop-hover)';
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.style.background = 'var(--soft-bg)';
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.style.background = 'var(--soft-bg)';
+
+      const files = [...e.dataTransfer.files].filter(f => f.type.startsWith('image/'));
+
+      if (files.length !== 4) {
+        alert('Lütfen tam olarak 4 fotoğraf bırakın.');
+        return;
+      }
+
+      droppedFiles = files;
+      cropStates = files.map(() => ({ zoom: 1, x: 0.5, y: 0.5 }));
+      selectedIndex = 0;
+      dropZone.innerHTML = '<strong>4 fotoğraf yüklendi ✔</strong><br><span style="color:var(--muted); font-size:14px;">Sıralamayı aşağıdaki önizlemeleri sürükleyerek değiştirebilirsin</span>';
+      renderThumbs();
+    });
+
+    downloadBtn.addEventListener('click', downloadJpg);
+
+    document.getElementById('pdfBtn').addEventListener('click', () => {
+      if (!canvas.width || !canvas.height) {
+        alert('Önce kolajı oluşturun.');
+        return;
+      }
+      const pdfWindow = window.open('', '_blank');
+      const imgData = canvas.toDataURL('image/png');
+      pdfWindow.document.write(`<!DOCTYPE html><html><head><title>PDF</title><style>html,body{margin:0;padding:0}img{width:100%;display:block}</style></head><body><img src="${imgData}"></body></html>`);
+      pdfWindow.document.close();
+      pdfWindow.focus();
+      pdfWindow.print();
+    });
+
+    const themeToggle = document.getElementById('themeToggle');
+    const root = document.documentElement;
+    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+    const savedTheme = localStorage.getItem('themePreference') || (systemPrefersDark.matches ? 'dark' : 'light');
+
+    function applyTheme(theme) {
+      root.setAttribute('data-theme', theme);
+      if (editorImage && tempCropState) renderEditor();
+      if (droppedFiles.length) renderThumbs();
+    }
+
+    function toggleTheme() {
+      const current = root.getAttribute('data-theme') || 'light';
+      const next = current === 'light' ? 'dark' : 'light';
+      localStorage.setItem('themePreference', next);
+      applyTheme(next);
+    }
+
+    applyTheme(savedTheme);
+    themeToggle.addEventListener('click', toggleTheme);
+
+    systemPrefersDark.addEventListener('change', () => {
+      if (!localStorage.getItem('themePreference')) {
+        applyTheme(systemPrefersDark.matches ? 'dark' : 'light');
+      }
+    });
+  </script>
+</body>
+</html>
