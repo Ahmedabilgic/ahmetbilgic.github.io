@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aylık Nöbet Planlayıcı</title>
+  <style>
+    :root {
+      --text: #ecf1ff;
+      --muted: #a9b4d0;
+      --accent: #7c9cff;
+      --danger: #fb7185;
+      --warning: #fbbf24;
+      --success: #4ade80;
+      --border: rgba(255,255,255,0.10);
+      --shadow: 0 20px 50px rgba(0,0,0,0.35);
+      --radius: 20px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(124,156,255,0.18), transparent 28%),
+        radial-gradient(circle at top right, rgba(94,234,212,0.10), transparent 22%),
+        linear-gradient(180deg, #0a1020, #0e1328 40%, #09101d 100%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    .container { max-width: 1460px; margin: 0 auto; padding: 24px; }
+    .hero { display:flex; justify-content:space-between; gap:18px; align-items:flex-start; margin-bottom:22px; }
+    .hero h1 { margin:0; font-size:clamp(28px,4vw,42px); line-height:1.05; letter-spacing:-0.03em; }
+    .grid { display:grid; grid-template-columns:400px 1fr; gap:20px; align-items:start; }
+    .panel {
+      background:linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+    .panel-header { padding:18px 20px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; gap:12px; }
+    .panel-title { font-size:17px; font-weight:700; margin:0; }
+    .panel-body { padding:18px 20px 20px; }
+    .stack { display:grid; gap:14px; }
+    .two-col { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    label { display:grid; gap:7px; color:var(--muted); font-size:13px; }
+    input, select, textarea, button { font:inherit; }
+    input, select, textarea {
+      width:100%;
+      border:1px solid var(--border);
+      background:rgba(8,13,30,0.92);
+      color:var(--text);
+      border-radius:14px;
+      padding:12px 14px;
+      outline:none;
+      min-height:48px;
+      appearance:auto;
+      -webkit-appearance:auto;
+      -moz-appearance:auto;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color:rgba(124,156,255,0.9);
+      box-shadow:0 0 0 4px rgba(124,156,255,0.15);
+    }
+    textarea { min-height:92px; resize:vertical; }
+    .helper { color:var(--muted); font-size:12px; line-height:1.5; }
+    .actions, .toolbar { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .actions > * { flex:1 1 0; }
+    button {
+      border:none;
+      border-radius:14px;
+      padding:12px 16px;
+      cursor:pointer;
+      font-weight:700;
+      min-height:48px;
+      transition:transform 0.15s ease;
+    }
+    button:hover { transform:translateY(-1px); }
+    .btn-primary { background:linear-gradient(135deg, var(--accent), #9d8cff); color:white; }
+    .btn-secondary { background:rgba(255,255,255,0.08); color:var(--text); border:1px solid var(--border); }
+    .btn-success { background:linear-gradient(135deg, #12b981, #34d399); color:white; }
+    .btn-danger { background:linear-gradient(135deg, #ef4444, #fb7185); color:white; }
+    .btn-warning { background:linear-gradient(135deg, #f59e0b, #fbbf24); color:#201200; }
+    .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:16px; }
+    .stat { background:rgba(255,255,255,0.04); border:1px solid var(--border); border-radius:16px; padding:14px; }
+    .stat .label { color:var(--muted); font-size:12px; }
+    .stat .value { font-size:26px; font-weight:800; margin-top:6px; }
+    .staff-list { display:grid; gap:10px; max-height:none; overflow:visible; padding-right:0; }
+    
+.staff-item{
+display:flex;
+justify-content:space-between;
+align-items:center;
+gap:14px;
+padding:12px 14px;
+border-radius:14px;
+border:1px solid rgba(255,255,255,0.08);
+background:rgba(255,255,255,0.035);
+}
+.staff-left{
+display:flex;
+flex-direction:column;
+gap:4px;
+}
+.staff-name{
+font-weight:700;
+font-size:14px;
+}
+.staff-sub{
+font-size:11px;
+color:var(--muted);
+}
+.staff-target{
+display:flex;
+align-items:center;
+gap:6px;
+font-size:11px;
+color:var(--muted);
+}
+.staff-target input{
+width:60px;
+height:26px;
+border-radius:8px;
+padding:2px 6px;
+font-size:12px;
+background:rgba(0,0,0,0.35);
+border:1px solid rgba(255,255,255,0.08);
+}
+.staff-actions{
+display:flex;
+gap:6px;
+}
+.staff-actions button{
+padding:6px 10px;
+min-height:28px;
+font-size:11px;
+border-radius:8px;
+}
+
+.staff-item { display:grid; grid-template-columns:1fr auto; gap:10px; align-items:center; padding:12px 14px; border-radius:16px; border:1px solid var(--border); background:rgba(255,255,255,0.04); }
+    .staff-meta { font-size:12px; color:var(--muted); margin-top:3px; }
+    .staff-actions { display:flex; gap:8px; flex-wrap:wrap; }
+    .calendar-wrap { overflow:auto; border:1px solid var(--border); border-radius:18px; }
+    table { width:100%; border-collapse:collapse; min-width:980px; background:rgba(255,255,255,0.02); }
+    th, td { border-bottom:1px solid rgba(255,255,255,0.07); padding:12px; text-align:left; vertical-align:top; }
+    th { position:sticky; top:0; z-index:2; background:#111938; font-size:13px; }
+    td.day-col { width:220px; background:rgba(255,255,255,0.03); position:sticky; left:0; z-index:1; }
+    .day-title { font-weight:800; }
+    .day-subtitle { color:var(--muted); font-size:12px; margin-top:3px; }
+    .chips { display:flex; flex-wrap:wrap; gap:8px; }
+    .chip { padding:7px 10px; border-radius:999px; font-size:12px; font-weight:700; border:1px solid rgba(255,255,255,0.08); background:rgba(124,156,255,0.13); color:#dbe7ff; }
+    .chip.warn { background:rgba(251,191,36,0.14); color:#fde68a; }
+    .chip.danger { background:rgba(251,113,133,0.15); color:#fecdd3; }
+    .chip.ok { background:rgba(74,222,128,0.14); color:#bbf7d0; }
+    .empty { color:var(--muted); font-style:italic; }
+    .legend { display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
+    .error-box {
+      border-left:4px solid var(--danger);
+      background:rgba(251,113,133,0.10);
+      color:#fecdd3;
+      padding:12px 14px;
+      border-radius:12px;
+      display:none;
+      line-height:1.5;
+      margin-bottom:12px;
+    }
+    .modal-backdrop {
+      position:fixed; inset:0; background:rgba(3,8,23,0.7);
+      display:none; align-items:center; justify-content:center; padding:18px; z-index:30;
+      backdrop-filter: blur(8px);
+    }
+    .modal-backdrop.open { display:flex; }
+    .modal {
+      width:min(1100px,100%);
+      max-height:92vh;
+      overflow:hidden;
+      border:1px solid var(--border);
+      border-radius:24px;
+      background:linear-gradient(180deg, #121932, #0f1730);
+      box-shadow:var(--shadow);
+      display:grid; grid-template-rows:auto 1fr auto;
+    }
+    .modal-header, .modal-footer {
+      padding:16px 20px;
+      border-bottom:1px solid var(--border);
+      display:flex; justify-content:space-between; align-items:center; gap:12px;
+    }
+    .modal-footer { border-bottom:none; border-top:1px solid var(--border); flex-wrap:wrap; }
+    .modal-body { padding:18px 20px 22px; overflow:auto; display:grid; gap:16px; }
+    
+.person-grid {
+  display:grid;
+  grid-template-columns:repeat(7, minmax(0, 1fr));
+  gap:10px;
+}
+.calendar-weekday{
+  font-size:12px;
+  color:var(--muted);
+  padding:0 4px 4px;
+  text-align:left;
+}
+.calendar-placeholder{
+  min-height:1px;
+}
+
+    .day-card { border:1px solid var(--border); border-radius:18px; padding:10px 12px; min-height:74px; background:rgba(255,255,255,0.04); cursor:pointer; user-select:none; }
+    .day-card.must { outline:2px solid rgba(74,222,128,0.8); background:rgba(74,222,128,0.12); }
+    .day-card.blocked { outline:2px solid rgba(251,113,133,0.9); background:rgba(251,113,133,0.13); }
+    .day-card .small { color:var(--muted); font-size:12px; margin-top:4px; }
+    .pill-tabs { display:flex; gap:8px; flex-wrap:wrap; }
+    .pill-tab { padding:10px 14px; border-radius:999px; border:1px solid var(--border); background:rgba(255,255,255,0.05); color:var(--text); cursor:pointer; font-weight:700; }
+    .pill-tab.active { background:rgba(124,156,255,0.22); border-color:rgba(124,156,255,0.55); }
+    @media (max-width:1100px) {
+      .grid { grid-template-columns:1fr; }
+      .stats { grid-template-columns:repeat(2,1fr); }
+    }
+    @media (max-width:900px) {
+      .person-grid { grid-template-columns:repeat(4, minmax(0, 1fr)); }
+    }
+    @media (max-width:700px) {
+      .container { padding:14px; }
+      .two-col, .stats { grid-template-columns:1fr; }
+      .hero { flex-direction:column; }
+      .actions > * { flex-basis:100%; }
+      .person-grid { grid-template-columns:repeat(2, minmax(0, 1fr)); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="hero">
+      <h1>Aylık Nöbet Planlayıcı</h1>
+    </div>
+
+    <div class="grid">
+      <section class="panel">
+        <div class="panel-header"><h2 class="panel-title">Plan Ayarları</h2></div>
+        <div class="panel-body stack">
+          <div class="two-col">
+            <label for="yearInput">Yıl
+              <input id="yearInput" type="number" min="2020" max="2100" />
+            </label>
+            <label for="monthInput">Ay
+              <select id="monthInput"></select>
+            </label>
+          </div>
+
+          <div class="two-col">
+            <label for="dailyCountInput">Günlük nöbetçi sayısı
+              <input id="dailyCountInput" type="number" min="1" max="50" value="3" />
+            </label>
+            <label for="maxGapInput">Bir nöbetten sonra maksimum boş gün
+              <input id="maxGapInput" type="number" min="1" max="31" value="4" />
+            </label>
+          </div>
+
+          <div class="stack">
+            <label for="singleStaffInput">Tek personel ekle</label>
+            <div class="actions">
+              <input id="singleStaffInput" type="text" placeholder="Örn: Ahmet Yılmaz" />
+              <button type="button" class="btn-secondary" id="addSingleStaffBtn">Ekle</button>
+            </div>
+
+            <label for="bulkStaffInput">Toplu personel ekle</label>
+            <textarea id="bulkStaffInput" placeholder="Her satıra bir isim yazın veya virgül / noktalı virgül ile ayırın"></textarea>
+
+            <div class="actions">
+              <button type="button" class="btn-secondary" id="addBulkStaffBtn">Toplu Ekle</button>
+              <button type="button" class="btn-danger" id="clearStaffBtn">Tüm Personeli Sil</button>
+            </div>
+          </div>
+
+          <div>
+            <div class="toolbar" style="justify-content:space-between; margin-bottom:10px;">
+              <strong>Personel Listesi</strong>
+              <span class="helper" id="staffCountLabel">0 personel</span>
+            </div>
+            <div class="staff-list" id="staffList"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2 class="panel-title">Oluşturulan Plan</h2>
+          <div class="toolbar">
+            <button type="button" class="btn-primary" id="generateBtn">Otomatik Plan Oluştur</button>
+            <button type="button" class="btn-success" id="excelBtn">Excel Çıktısı Al</button>
+            <button type="button" class="btn-secondary" id="downloadHtmlBtn">HTML İndir</button>
+          </div>
+        </div>
+
+        <div class="panel-body">
+          <div class="stats">
+            <div class="stat"><div class="label">Ayın gün sayısı</div><div class="value" id="statDays">0</div></div>
+            <div class="stat"><div class="label">Toplam personel</div><div class="value" id="statStaff">0</div></div>
+            <div class="stat"><div class="label">Toplam nöbet slotu</div><div class="value" id="statSlots">0</div></div>
+            <div class="stat"><div class="label">Atanan slot</div><div class="value" id="statAssigned">0</div></div>
+          </div>
+
+          <div class="panel" style="margin-bottom:16px;">
+            <div class="panel-body" style="padding:14px 16px;">
+              <div style="font-weight:700; margin-bottom:8px;">Nöbet Dağılım Hedefi Özeti</div>
+              <div class="helper" id="targetSummaryBox">Henüz hedef girilmedi.</div>
+            </div>
+          </div>
+
+          <div id="errorBox" class="error-box"></div>
+
+          <div class="calendar-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:220px;">Gün</th>
+                  <th>Atanan Personeller</th>
+                  <th>Eksik / Durum</th>
+                </tr>
+              </thead>
+              <tbody id="scheduleTableBody"></tbody>
+            </table>
+          </div>
+
+          <div class="legend">
+            <span class="chip ok">Tam dolu</span>
+            <span class="chip warn">Eksik atama</span>
+            <span class="chip danger">Kural / tercih sorunu</span>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="prefModalBackdrop">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <div class="panel-title" id="prefModalTitle">Personel tercihleri</div>
+          <div class="helper">Yeşil: nöbet istediği gün • Kırmızı: istemediği gün</div>
+        </div>
+        <button type="button" class="btn-secondary" id="closeModalBtn">Kapat</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="pill-tabs">
+          <button type="button" class="pill-tab active" data-mode="must">İstediği Günler</button>
+          <button type="button" class="pill-tab" data-mode="blocked">İstemediği Günler</button>
+        </div>
+        <div class="helper">Bir güne tıklayarak işaretleyebilirsin. Aynı gün hem istenen hem istenmeyen olamaz.</div>
+        <div class="person-grid" id="prefDaysGrid"></div>
+      </div>
+
+      <div class="modal-footer">
+        <div class="helper" id="prefSummary">Seçim yok</div>
+        <div class="actions">
+          <button type="button" class="btn-warning" id="resetPrefsBtn">Tercihleri Temizle</button>
+          <button type="button" class="btn-primary" id="savePrefsBtn">Kaydet</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const monthNames = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+    const weekdayNames = ['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];
+
+    const state = {
+      year: new Date().getFullYear(),
+      month: new Date().getMonth(),
+      dailyCount: 3,
+      maxGap: 4,
+      staff: [],
+      days: [],
+      schedule: [],
+      editingStaffId: null,
+      modalMode: 'must',
+      tempPrefs: { must: new Set(), blocked: new Set() }
+    };
+
+    const el = {
+      yearInput: document.getElementById('yearInput'),
+      monthInput: document.getElementById('monthInput'),
+      dailyCountInput: document.getElementById('dailyCountInput'),
+      maxGapInput: document.getElementById('maxGapInput'),
+      singleStaffInput: document.getElementById('singleStaffInput'),
+      addSingleStaffBtn: document.getElementById('addSingleStaffBtn'),
+      bulkStaffInput: document.getElementById('bulkStaffInput'),
+      addBulkStaffBtn: document.getElementById('addBulkStaffBtn'),
+      clearStaffBtn: document.getElementById('clearStaffBtn'),
+      staffList: document.getElementById('staffList'),
+      staffCountLabel: document.getElementById('staffCountLabel'),
+      generateBtn: document.getElementById('generateBtn'),
+      excelBtn: document.getElementById('excelBtn'),
+      downloadHtmlBtn: document.getElementById('downloadHtmlBtn'),
+      scheduleTableBody: document.getElementById('scheduleTableBody'),
+      statDays: document.getElementById('statDays'),
+      statStaff: document.getElementById('statStaff'),
+      statSlots: document.getElementById('statSlots'),
+      statAssigned: document.getElementById('statAssigned'),
+      errorBox: document.getElementById('errorBox'),
+      prefModalBackdrop: document.getElementById('prefModalBackdrop'),
+      prefModalTitle: document.getElementById('prefModalTitle'),
+      prefDaysGrid: document.getElementById('prefDaysGrid'),
+      prefSummary: document.getElementById('prefSummary'),
+      closeModalBtn: document.getElementById('closeModalBtn'),
+      resetPrefsBtn: document.getElementById('resetPrefsBtn'),
+      savePrefsBtn: document.getElementById('savePrefsBtn'),
+      targetSummaryBox: document.getElementById('targetSummaryBox')
+    };
+
+    function uid() { return Math.random().toString(36).slice(2, 10); }
+    function normalizeName(name) { return String(name || '').trim().replace(/\s+/g, ' '); }
+    function compareNamesTR(a, b) {
+      return String(a || '').localeCompare(String(b || ''), 'tr', { sensitivity: 'base' });
+    }
+    function escapeXml(str) {
+      return String(str == null ? '' : str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;');
+    }
+    function escapeHtml(str) {
+      return String(str == null ? '' : str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+    function daysInMonth(year, month) { return new Date(year, month + 1, 0).getDate(); }
+
+    function buildDays() {
+      const total = daysInMonth(state.year, state.month);
+      state.days = Array.from({ length: total }, (_, i) => {
+        const date = new Date(state.year, state.month, i + 1);
+        return {
+          day: i + 1,
+          iso: `${state.year}-${String(state.month + 1).padStart(2, '0')}-${String(i + 1).padStart(2, '0')}`,
+          weekday: date.getDay(),
+          weekdayLabel: weekdayNames[date.getDay()]
+        };
+      });
+    }
+
+    function fillMonthOptions() {
+      el.monthInput.innerHTML = '';
+      monthNames.forEach((name, idx) => {
+        const option = document.createElement('option');
+        option.value = String(idx);
+        option.textContent = name;
+        el.monthInput.appendChild(option);
+      });
+      el.monthInput.value = String(state.month);
+    }
+
+    function showError(message) {
+      el.errorBox.style.display = 'block';
+      el.errorBox.innerHTML = message;
+    }
+
+    function hideError() {
+      el.errorBox.style.display = 'none';
+      el.errorBox.innerHTML = '';
+    }
+
+    function getTotalSlots() {
+      return state.days.length * state.dailyCount;
+    }
+
+    function getTargetedStaff() {
+      return state.staff.filter(s => s.targetCount !== '' && s.targetCount !== null && s.targetCount !== undefined);
+    }
+
+    function getUnspecifiedStaff() {
+      return state.staff.filter(s => s.targetCount === '' || s.targetCount === null || s.targetCount === undefined);
+    }
+
+    function getTargetValidation() {
+      const totalSlots = getTotalSlots();
+      const targetedStaff = getTargetedStaff();
+      const targetedTotal = targetedStaff.reduce((sum, s) => sum + Number(s.targetCount || 0), 0);
+      const unspecified = getUnspecifiedStaff();
+      const remaining = totalSlots - targetedTotal;
+
+      return {
+        totalSlots,
+        targetedStaff,
+        targetedTotal,
+        unspecified,
+        remaining,
+        isOver: remaining < 0,
+        isExact: remaining === 0 && unspecified.length === 0,
+        canDistributeExact: remaining >= 0
+      };
+    }
+
+    function renderTargetSummary() {
+      const info = getTargetValidation();
+      const { totalSlots, targetedTotal, unspecified, remaining } = info;
+
+      let html = '';
+      html += `<div>Toplam slot: <strong>${totalSlots}</strong></div>`;
+      html += `<div>Hedef girilen personel toplamı: <strong>${targetedTotal}</strong></div>`;
+      html += `<div>Hedef girilmeyen personel sayısı: <strong>${unspecified.length}</strong></div>`;
+
+      if (remaining < 0) {
+        html += `<div style="color:#fecdd3; margin-top:6px;">Girilen hedefler toplam slotu <strong>${Math.abs(remaining)}</strong> adet aşıyor. Bu haliyle plan üretilemez.</div>`;
+      } else if (unspecified.length > 0) {
+        const base = Math.floor(remaining / unspecified.length);
+        const extra = remaining % unspecified.length;
+        const distributed = unspecified.map((person, idx) => ({
+          name: person.name,
+          count: base + (idx < extra ? 1 : 0)
+        }));
+        html += `<div style="margin-top:6px;">Kalan <strong>${remaining}</strong> nöbet, hedef girilmeyen personele kesin dağıtım olarak verilir.</div>`;
+        html += `<div style="margin-top:6px;">` + distributed.map(x => `${escapeHtml(x.name)}: <strong>${x.count}</strong>`).join(' • ') + `</div>`;
+      } else {
+        html += `<div style="margin-top:6px;">Tüm personele hedef girilmiş.</div>`;
+        if (remaining > 0) {
+          html += `<div style="color:#fecdd3;">Dağıtılmamış <strong>${remaining}</strong> slot var. Bu haliyle plan üretilemez.</div>`;
+        } else {
+          html += `<div style="color:#bbf7d0;">Hedefler toplam slot ile tam uyumlu.</div>`;
+        }
+      }
+
+      el.targetSummaryBox.innerHTML = html;
+    }
+
+    function updateStats() {
+      const totalSlots = state.days.length * state.dailyCount;
+      const assigned = state.schedule.reduce((sum, d) => sum + d.assigned.length, 0);
+      el.statDays.textContent = state.days.length;
+      el.statStaff.textContent = state.staff.length;
+      el.statSlots.textContent = totalSlots;
+      el.statAssigned.textContent = assigned;
+      el.staffCountLabel.textContent = `${state.staff.length} personel`;
+      renderTargetSummary();
+    }
+
+    function getStaffById(id) {
+      return state.staff.find(s => s.id === id);
+    }
+
+    function addStaff(names) {
+      const existing = new Set(state.staff.map(s => s.name.toLocaleLowerCase('tr-TR')));
+      let added = 0;
+      names.forEach(name => {
+        const clean = normalizeName(name);
+        if (!clean) return;
+        const key = clean.toLocaleLowerCase('tr-TR');
+        if (!existing.has(key)) {
+          state.staff.push({ id: uid(), name: clean, targetCount: '', preferences: { must: [], blocked: [] } });
+          existing.add(key);
+          added += 1;
+        }
+      });
+      renderStaff();
+      renderSchedule();
+      return added;
+    }
+
+    function removeStaff(id) {
+      state.staff = state.staff.filter(s => s.id !== id);
+      renderStaff();
+      renderSchedule();
+    }
+
+    function renderStaff() {
+      if (!state.staff.length) {
+        el.staffList.innerHTML = '<div class="empty">Henüz personel eklenmedi.</div>';
+        updateStats();
+        return;
+      }
+
+      el.staffList.innerHTML = state.staff.map(person => `
+<div class="staff-item">
+  <div class="staff-left">
+    <div class="staff-name">${escapeHtml(person.name)}</div>
+    <div class="staff-sub">İstediği: ${person.preferences.must.length} • İstemediği: ${person.preferences.blocked.length}</div>
+    <div class="staff-target">
+      hedef
+      <input type="number" min="0" step="1"
+      value="${person.targetCount === '' ? '' : person.targetCount}"
+      data-action="target"
+      data-id="${person.id}">
+    </div>
+  </div>
+
+  <div class="staff-actions">
+    <button type="button" class="btn-secondary" data-action="prefs" data-id="${person.id}">Tercih</button>
+    <button type="button" class="btn-danger" data-action="remove" data-id="${person.id}">Sil</button>
+  </div>
+</div>
+`).join('');
+
+      updateStats();
+    }
+
+    function openPreferences(id) {
+      buildDays();
+      const person = getStaffById(id);
+      if (!person) return;
+      state.editingStaffId = id;
+      state.modalMode = 'must';
+      state.tempPrefs = {
+        must: new Set(person.preferences.must),
+        blocked: new Set(person.preferences.blocked)
+      };
+      document.querySelectorAll('.pill-tab').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.mode === 'must');
+      });
+      el.prefModalTitle.textContent = `${person.name} • Gün Tercihleri`;
+      renderPreferenceGrid();
+      el.prefModalBackdrop.classList.add('open');
+    }
+
+    function renderPreferenceGrid() {
+      const mondayFirst = ['Pzt', 'Sa', 'Ça', 'Pe', 'Cu', 'Ct', 'Pa'];
+      const headers = mondayFirst.map(label => `<div class="calendar-weekday">${label}</div>`).join('');
+
+      const firstDate = new Date(state.year, state.month, 1);
+      const jsDay = firstDate.getDay(); // 0 Pazar ... 6 Cumartesi
+      const mondayIndex = jsDay === 0 ? 6 : jsDay - 1;
+
+      let grid = headers;
+      for (let i = 0; i < mondayIndex; i++) {
+        grid += '<div class="calendar-placeholder"></div>';
+      }
+
+      grid += state.days.map(d => {
+        const isMust = state.tempPrefs.must.has(d.day);
+        const isBlocked = state.tempPrefs.blocked.has(d.day);
+        const cls = isMust ? 'must' : isBlocked ? 'blocked' : '';
+        return `
+          <div class="day-card ${cls}" data-day="${d.day}">
+            <strong>${d.day}. Gün</strong>
+            <div class="small">${d.weekdayLabel}</div>
+          </div>
+        `;
+      }).join('');
+
+      el.prefDaysGrid.innerHTML = grid;
+      el.prefSummary.textContent = `İstenen: ${state.tempPrefs.must.size} gün • İstenmeyen: ${state.tempPrefs.blocked.size} gün`;
+    }
+
+    function togglePreference(day) {
+      if (state.modalMode === 'must') {
+        if (state.tempPrefs.must.has(day)) state.tempPrefs.must.delete(day);
+        else {
+          state.tempPrefs.must.add(day);
+          state.tempPrefs.blocked.delete(day);
+        }
+      } else {
+        if (state.tempPrefs.blocked.has(day)) state.tempPrefs.blocked.delete(day);
+        else {
+          state.tempPrefs.blocked.add(day);
+          state.tempPrefs.must.delete(day);
+        }
+      }
+      renderPreferenceGrid();
+    }
+
+    function closeModal() {
+      el.prefModalBackdrop.classList.remove('open');
+      state.editingStaffId = null;
+    }
+
+    function savePreferences() {
+      const person = getStaffById(state.editingStaffId);
+      if (!person) return;
+      person.preferences.must = Array.from(state.tempPrefs.must).sort((a, b) => a - b);
+      person.preferences.blocked = Array.from(state.tempPrefs.blocked).sort((a, b) => a - b);
+      renderStaff();
+      closeModal();
+    }
+
+    function scoreCandidate(person, dayIndex, assignedSet, history, overdueSet) {
+      const dayNum = dayIndex + 1;
+      if (assignedSet.has(person.id)) return -999999;
+      if (person.preferences.blocked.includes(dayNum)) return -999999;
+
+      const info = history[person.id] || { lastAssigned: -999, assignedCount: 0 };
+      const diff = dayIndex - info.lastAssigned;
+
+      if (info.lastAssigned >= 0 && diff < 2) return -999999;
+
+      let score = 0;
+      const hasMustToday = person.preferences.must.includes(dayNum);
+      if (hasMustToday) score += 100000;
+
+      if (overdueSet.has(person.id)) score += 200;
+      if (info.lastAssigned === -999) score += 40;
+      score += Math.min(diff, 10) * 8;
+      score -= info.assignedCount * 11;
+
+      const hasTarget = person.targetCount !== '' && person.targetCount !== null && person.targetCount !== undefined;
+      if (hasTarget) {
+        const target = Number(person.targetCount || 0);
+        const deficit = target - info.assignedCount;
+
+        if (deficit <= 0) return -999999;
+        score += deficit * 500;
+      }
+
+      // If a person has a requested day coming very soon, keep them available for that day.
+      const futureMustDays = person.preferences.must.filter(d => d > dayNum).sort((a, b) => a - b);
+      if (futureMustDays.length) {
+        const nextMust = futureMustDays[0];
+        const gapToNextMust = nextMust - dayNum;
+
+        if (gapToNextMust === 1) score -= 20000;
+        else if (gapToNextMust === 2) score -= 7000;
+        else if (gapToNextMust === 3) score -= 2500;
+      }
+
+      const expected = ((dayIndex + 1) * state.dailyCount) / Math.max(state.staff.length, 1);
+      if (info.assignedCount < expected) score += 20;
+      if (info.assignedCount > expected + 1) score -= 20;
+
+      return score;
+    }
+
+    function buildExactTargets() {
+      const info = getTargetValidation();
+      const { totalSlots, targetedTotal, unspecified, remaining } = info;
+
+      if (remaining < 0) {
+        return { ok: false, message: `Girilen hedefler toplam slotu ${Math.abs(remaining)} adet aşıyor. Önce hedefleri düzelt.` };
+      }
+
+      const targetMap = {};
+      state.staff.forEach(person => {
+        if (person.targetCount !== '' && person.targetCount !== null && person.targetCount !== undefined) {
+          targetMap[person.id] = Number(person.targetCount || 0);
+        }
+      });
+
+      if (unspecified.length > 0) {
+        const base = Math.floor(remaining / unspecified.length);
+        const extra = remaining % unspecified.length;
+        unspecified.forEach((person, idx) => {
+          targetMap[person.id] = base + (idx < extra ? 1 : 0);
+        });
+      } else if (remaining > 0) {
+        return { ok: false, message: `Tüm personele hedef girilmiş ama ${remaining} slot boşta kalıyor. Hedefleri düzelt.` };
+      }
+
+      const checkTotal = Object.values(targetMap).reduce((sum, n) => sum + n, 0);
+      if (checkTotal !== totalSlots) {
+        return { ok: false, message: 'Hedef toplamı slot toplamına eşit değil. Plan üretilemez.' };
+      }
+
+      return { ok: true, targetMap };
+    }
+
+    function generateSchedule() {
+      state.year = Number(el.yearInput.value) || new Date().getFullYear();
+      state.month = Number(el.monthInput.value) || 0;
+      state.dailyCount = Math.max(1, Number(el.dailyCountInput.value) || 1);
+      state.maxGap = Math.max(1, Number(el.maxGapInput.value) || 1);
+      buildDays();
+
+      if (!state.staff.length) {
+        state.schedule = state.days.map(d => ({ ...d, assigned: [], issues: ['Personel yok'] }));
+        renderSchedule();
+        showError('Plan oluşturmak için en az 1 personel eklemelisin.');
+        return;
+      }
+
+      const exactTargets = buildExactTargets();
+      if (!exactTargets.ok) {
+        state.schedule = state.days.map(d => ({ ...d, assigned: [], issues: [] }));
+        renderSchedule();
+        showError(exactTargets.message);
+        return;
+      }
+
+      const targetMap = exactTargets.targetMap;
+      const history = Object.fromEntries(state.staff.map(s => [s.id, { lastAssigned: -999, assignedCount: 0 }]));
+      const schedule = [];
+      const globalIssues = [];
+
+      for (let i = 0; i < state.days.length; i++) {
+        const assigned = [];
+        const assignedSet = new Set();
+        const issues = [];
+
+        const overdueSet = new Set(
+          state.staff
+            .filter(person => {
+              const info = history[person.id];
+              if (info.lastAssigned === -999) return false;
+              return i - info.lastAssigned > state.maxGap;
+            })
+            .map(person => person.id)
+        );
+
+        const mustTodayCandidates = state.staff
+          .filter(person =>
+            person.preferences.must.includes(i + 1) &&
+            !assignedSet.has(person.id) &&
+            !person.preferences.blocked.includes(i + 1) &&
+            history[person.id].assignedCount < targetMap[person.id] &&
+            !(history[person.id].lastAssigned >= 0 && i - history[person.id].lastAssigned < 2)
+          )
+          .sort((a, b) => compareNamesTR(a.name, b.name));
+
+        for (const person of mustTodayCandidates) {
+          if (assigned.length >= state.dailyCount) break;
+          assigned.push(person);
+          assignedSet.add(person.id);
+          history[person.id].lastAssigned = i;
+          history[person.id].assignedCount += 1;
+        }
+
+        while (assigned.length < state.dailyCount) {
+          const ranked = state.staff
+            .filter(person => !assignedSet.has(person.id))
+            .filter(person => history[person.id].assignedCount < targetMap[person.id])
+            .map(person => ({ person, score: scoreCandidate(person, i, assignedSet, history, overdueSet) }))
+            .filter(item => item.score > -999999)
+            .sort((a, b) => {
+              if (b.score !== a.score) return b.score - a.score;
+              return compareNamesTR(a.person.name, b.person.name);
+            });
+
+          const chosen = ranked[0];
+          if (!chosen) {
+            issues.push(`${assigned.length + 1}. slot doldurulamadı`);
+            break;
+          }
+
+          assigned.push(chosen.person);
+          assignedSet.add(chosen.person.id);
+          history[chosen.person.id].lastAssigned = i;
+          history[chosen.person.id].assignedCount += 1;
+        }
+
+        const mustPeople = state.staff.filter(p => p.preferences.must.includes(i + 1));
+        const missedMust = mustPeople.filter(p => !assignedSet.has(p.id)).map(p => p.name);
+        if (missedMust.length) {
+          issues.push(`İstenen gün ataması yapılamayanlar: ${missedMust.join(', ')}`);
+        }
+
+        schedule.push({ ...state.days[i], assigned, issues });
+      }
+
+      state.staff.forEach(person => {
+        let prevIndex = null;
+        let maxObservedGap = 0;
+        schedule.forEach((day, idx) => {
+          if (day.assigned.some(a => a.id === person.id)) {
+            if (prevIndex !== null) maxObservedGap = Math.max(maxObservedGap, idx - prevIndex - 1);
+            prevIndex = idx;
+          }
+        });
+        if (maxObservedGap > state.maxGap) {
+          globalIssues.push(`${person.name} için ${maxObservedGap} gün boşluk oluştu (hedef: ${state.maxGap}).`);
+        }
+      });
+
+      state.staff.forEach(person => {
+        const actual = schedule.reduce((sum, day) => sum + (day.assigned.some(a => a.id === person.id) ? 1 : 0), 0);
+        const target = Number(targetMap[person.id] || 0);
+        if (actual !== target) {
+          globalIssues.push(`${person.name} hedef ${target}, oluşan ${actual}.`);
+        }
+      });
+
+      state.schedule = schedule;
+      renderSchedule();
+
+      if (globalIssues.length) {
+        showError('Bu hedeflerle ve kurallarla kesin plan üretilemedi.<br><br>' + globalIssues.map(x => '• ' + escapeHtml(x)).join('<br>'));
+      } else {
+        hideError();
+      }
+    }
+
+    function renderSchedule() {
+      buildDays();
+
+      if (!state.schedule.length || state.schedule.length !== state.days.length) {
+        state.schedule = state.days.map(d => ({ ...d, assigned: [], issues: [] }));
+      }
+
+      el.scheduleTableBody.innerHTML = state.schedule.map(day => {
+        const assignedHtml = day.assigned.length
+          ? `<div class="chips">${day.assigned.map(p => `<span class="chip">${escapeHtml(p.name)}</span>`).join('')}</div>`
+          : '<div class="empty">Atama yok</div>';
+
+        const remaining = Math.max(0, state.dailyCount - day.assigned.length);
+        const statusChips = [];
+        if (remaining === 0) statusChips.push('<span class="chip ok">Tam dolu</span>');
+        else statusChips.push(`<span class="chip warn">${remaining} slot eksik</span>`);
+        if (day.issues && day.issues.length) statusChips.push('<span class="chip danger">Notlar var</span>');
+
+        const issuesHtml = day.issues && day.issues.length
+          ? `<div style="margin-top:10px; color:#fecdd3; font-size:12px; line-height:1.5;">${day.issues.map(x => '• ' + escapeHtml(x)).join('<br>')}</div>`
+          : '';
+
+        return `
+          <tr>
+            <td class="day-col">
+              <div class="day-title">${day.day}. Gün</div>
+              <div class="day-subtitle">${day.weekdayLabel} • ${day.iso}</div>
+            </td>
+            <td>${assignedHtml}</td>
+            <td><div class="chips">${statusChips.join('')}</div>${issuesHtml}</td>
+          </tr>
+        `;
+      }).join('');
+
+      updateStats();
+    }
+
+    function exportExcel() {
+      if (!state.schedule.length || !state.schedule.some(day => day.assigned.length)) {
+        showError('Önce nöbet planını oluşturmalısın.');
+        return;
+      }
+
+      const headerCells = ['Tarih', 'Gün'];
+      for (let i = 1; i <= state.dailyCount; i++) {
+        headerCells.push('Nöbetçi ' + i);
+      }
+
+      const columnCount = headerCells.length;
+      const weekendRows = [];
+
+      const rowsXml = state.schedule.map((day, index) => {
+        const parts = day.iso.split('-');
+        const trDate = `${Number(parts[2])}.${Number(parts[1])}.${parts[0]}`;
+        if (day.weekday === 0 || day.weekday === 6) weekendRows.push(index + 4);
+
+        let row = `<Row>`;
+        row += `<Cell ss:StyleID="sDate"><Data ss:Type="String">${escapeXml(trDate)}</Data></Cell>`;
+        row += `<Cell ss:StyleID="sDay"><Data ss:Type="String">${escapeXml(day.weekdayLabel)}</Data></Cell>`;
+        for (let i = 0; i < state.dailyCount; i++) {
+          row += `<Cell ss:StyleID="sName"><Data ss:Type="String">${escapeXml(day.assigned[i] ? day.assigned[i].name : '')}</Data></Cell>`;
+        }
+        row += `</Row>`;
+        return row;
+      }).join('');
+
+      const exactTargets = buildExactTargets();
+      const targetRowsXml = state.staff.map(person => {
+        const actual = state.schedule.reduce((sum, day) => sum + (day.assigned.some(a => a.id === person.id) ? 1 : 0), 0);
+        const target = exactTargets.ok ? String(exactTargets.targetMap[person.id] || 0) : '';
+        return `<Row>
+          <Cell ss:StyleID="sName"><Data ss:Type="String">${escapeXml(person.name)}</Data></Cell>
+          <Cell ss:StyleID="sDay"><Data ss:Type="String">${escapeXml(target)}</Data></Cell>
+          <Cell ss:StyleID="sDay"><Data ss:Type="Number">${actual}</Data></Cell>
+        </Row>`;
+      }).join('');
+
+      const mergeAcross = Math.max(columnCount - 1, 0);
+      const weekendXml = weekendRows.map(r => `<ConditionalFormatting ss:Range="R${r}C1:R${r}C${columnCount}"><Condition ss:Type="Expression" ss:Formula="1"><Interior ss:Color="#F2ECD0" ss:Pattern="Solid"/></Condition></ConditionalFormatting>`).join('');
+
+      const workbookXml = `<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:html="http://www.w3.org/TR/REC-html40">
+ <Styles>
+  <Style ss:ID="Default" ss:Name="Normal">
+   <Alignment ss:Vertical="Center"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Calibri" ss:Size="11"/>
+  </Style>
+  <Style ss:ID="sTitle">
+   <Font ss:FontName="Calibri" ss:Size="14" ss:Bold="1"/>
+   <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+  </Style>
+  <Style ss:ID="sMeta">
+   <Font ss:FontName="Calibri" ss:Size="11" ss:Bold="1"/>
+   <Alignment ss:Horizontal="Left" ss:Vertical="Center"/>
+  </Style>
+  <Style ss:ID="sHeader">
+   <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+   <Font ss:FontName="Calibri" ss:Size="11" ss:Bold="1"/>
+   <Interior ss:Color="#D9D9D9" ss:Pattern="Solid"/>
+  </Style>
+  <Style ss:ID="sDate">
+   <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+   <Font ss:FontName="Calibri" ss:Size="11"/>
+  </Style>
+  <Style ss:ID="sDay">
+   <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+   <Font ss:FontName="Calibri" ss:Size="11"/>
+  </Style>
+  <Style ss:ID="sName">
+   <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+   <Font ss:FontName="Calibri" ss:Size="11" ss:Bold="1"/>
+  </Style>
+ </Styles>
+ <Worksheet ss:Name="Nöbet Listesi">
+  <Table>
+   <Column ss:Width="85"/>
+   <Column ss:Width="72"/>
+   ${Array.from({length: state.dailyCount}).map(() => '<Column ss:Width="118"/>').join('')}
+   <Row ss:Height="22">
+    <Cell ss:MergeAcross="${mergeAcross}" ss:StyleID="sTitle"><Data ss:Type="String">${escapeXml(monthNames[state.month])} ${state.year} Nöbet Listesi</Data></Cell>
+   </Row>
+   <Row ss:Height="20">
+    <Cell ss:MergeAcross="${mergeAcross}" ss:StyleID="sMeta"><Data ss:Type="String">Günlük nöbetçi sayısı: ${state.dailyCount}</Data></Cell>
+   </Row>
+   <Row ss:Height="22">
+    ${headerCells.map(h => `<Cell ss:StyleID="sHeader"><Data ss:Type="String">${escapeXml(h)}</Data></Cell>`).join('')}
+   </Row>
+   ${rowsXml}
+  </Table>
+  ${weekendXml}
+  <WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">
+   <Selected/>
+   <FreezePanes/>
+   <FrozenNoSplit/>
+   <SplitHorizontal>3</SplitHorizontal>
+   <TopRowBottomPane>3</TopRowBottomPane>
+   <ActivePane>2</ActivePane>
+   <Panes><Pane><Number>3</Number></Pane><Pane><Number>2</Number><ActiveRow>3</ActiveRow></Pane></Panes>
+  </WorksheetOptions>
+ </Worksheet>
+ <Worksheet ss:Name="Hedef Ozeti">
+  <Table>
+   <Column ss:Width="160"/>
+   <Column ss:Width="90"/>
+   <Column ss:Width="90"/>
+   <Row ss:Height="22">
+    <Cell ss:StyleID="sHeader"><Data ss:Type="String">Personel</Data></Cell>
+    <Cell ss:StyleID="sHeader"><Data ss:Type="String">Hedef</Data></Cell>
+    <Cell ss:StyleID="sHeader"><Data ss:Type="String">Oluşan</Data></Cell>
+   </Row>
+   ${targetRowsXml}
+  </Table>
+ </Worksheet>
+</Workbook>`;
+
+      const blob = new Blob([workbookXml], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `nobet-listesi-${state.year}-${String(state.month + 1).padStart(2, '0')}.xml`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      hideError();
+    }
+
+    function downloadHTML() {
+      const htmlContent = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+      const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `nobet-planlayici-${state.year}-${String(state.month + 1).padStart(2, '0')}.html`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function bindEvents() {
+      el.yearInput.addEventListener('change', () => {
+        state.year = Number(el.yearInput.value) || new Date().getFullYear();
+        buildDays();
+        renderSchedule();
+      });
+
+      el.monthInput.addEventListener('change', () => {
+        state.month = Number(el.monthInput.value) || 0;
+        buildDays();
+        renderSchedule();
+      });
+
+      el.dailyCountInput.addEventListener('change', () => {
+        state.dailyCount = Math.max(1, Number(el.dailyCountInput.value) || 1);
+        renderSchedule();
+      });
+
+      el.maxGapInput.addEventListener('change', () => {
+        state.maxGap = Math.max(1, Number(el.maxGapInput.value) || 1);
+      });
+
+      el.addSingleStaffBtn.addEventListener('click', () => {
+        const value = normalizeName(el.singleStaffInput.value);
+        if (!value) {
+          showError('Tek personel eklemek için bir isim yaz.');
+          return;
+        }
+        const added = addStaff([value]);
+        if (!added) {
+          showError('Bu isim zaten listede bulunuyor.');
+          return;
+        }
+        hideError();
+        el.singleStaffInput.value = '';
+      });
+
+      el.singleStaffInput.addEventListener('keydown', event => {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          el.addSingleStaffBtn.click();
+        }
+      });
+
+      el.addBulkStaffBtn.addEventListener('click', () => {
+        const names = el.bulkStaffInput.value.split(/\r?\n|,|;/g).map(normalizeName).filter(Boolean);
+        if (!names.length) {
+          showError('Toplu ekleme için isim gir.');
+          return;
+        }
+        const added = addStaff(names);
+        if (!added) {
+          showError('Yeni personel eklenemedi. Aynı isimler zaten listede olabilir.');
+          return;
+        }
+        hideError();
+        el.bulkStaffInput.value = '';
+      });
+
+      el.clearStaffBtn.addEventListener('click', () => {
+        state.staff = [];
+        renderStaff();
+        renderSchedule();
+        hideError();
+      });
+
+      el.generateBtn.addEventListener('click', generateSchedule);
+      el.excelBtn.addEventListener('click', exportExcel);
+      el.downloadHtmlBtn.addEventListener('click', downloadHTML);
+      el.closeModalBtn.addEventListener('click', closeModal);
+      el.savePrefsBtn.addEventListener('click', savePreferences);
+
+      el.resetPrefsBtn.addEventListener('click', () => {
+        state.tempPrefs = { must: new Set(), blocked: new Set() };
+        renderPreferenceGrid();
+      });
+
+      document.querySelectorAll('.pill-tab').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.modalMode = btn.dataset.mode;
+          document.querySelectorAll('.pill-tab').forEach(x => x.classList.toggle('active', x === btn));
+        });
+      });
+
+      el.prefDaysGrid.addEventListener('click', event => {
+        const card = event.target.closest('.day-card');
+        if (!card) return;
+        togglePreference(Number(card.dataset.day));
+      });
+
+      el.staffList.addEventListener('click', event => {
+        const btn = event.target.closest('button[data-action]');
+        if (!btn) return;
+        if (btn.dataset.action === 'prefs') openPreferences(btn.dataset.id);
+        if (btn.dataset.action === 'remove') removeStaff(btn.dataset.id);
+      });
+
+      el.staffList.addEventListener('input', event => {
+        const inp = event.target.closest('input[data-action="target"]');
+        if (!inp) return;
+        const person = getStaffById(inp.dataset.id);
+        if (!person) return;
+        const val = inp.value.trim();
+        person.targetCount = val === '' ? '' : Math.max(0, Number(val));
+        renderTargetSummary();
+      });
+
+      el.prefModalBackdrop.addEventListener('click', event => {
+        if (event.target === el.prefModalBackdrop) closeModal();
+      });
+    }
+
+    function init() {
+      el.yearInput.value = String(state.year);
+      el.dailyCountInput.value = String(state.dailyCount);
+      el.maxGapInput.value = String(state.maxGap);
+      fillMonthOptions();
+      buildDays();
+      bindEvents();
+      renderStaff();
+      renderSchedule();
+      hideError();
+    }
+
+    init();
+  </script>
+</body>
+</html>
