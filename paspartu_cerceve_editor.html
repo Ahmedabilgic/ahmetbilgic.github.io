@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Paspartu Çerçeve Editörü</title>
+  <style>
+    :root {
+      --bg: #f3f1ed;
+      --panel: rgba(255,255,255,0.86);
+      --line: #e3ddd5;
+      --text: #2f2a26;
+      --muted: #7b736b;
+      --accent: #8a6a49;
+      --accent-soft: #efe7de;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, Arial, Helvetica, sans-serif;
+      color: var(--text);
+      background: linear-gradient(180deg, #f7f5f2 0%, #efebe6 100%);
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 300px minmax(0, 1fr) 300px;
+      min-height: 100vh;
+      gap: 0;
+    }
+
+    .sidebar,
+    .rightbar {
+      background: rgba(255,255,255,0.72);
+      backdrop-filter: blur(14px);
+      padding: 18px;
+      overflow-y: auto;
+    }
+
+    .sidebar { border-right: 1px solid var(--line); }
+    .rightbar { border-left: 1px solid var(--line); }
+
+    .preview-wrap {
+      display: grid;
+      place-items: center;
+      padding: 22px;
+    }
+
+    .panel-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin: 0 0 14px;
+      letter-spacing: -0.02em;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 14px;
+      box-shadow: 0 10px 28px rgba(44, 31, 16, 0.05);
+      margin-bottom: 12px;
+    }
+
+    .group-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin: 0 0 12px;
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .field,
+    .row-block {
+      margin-bottom: 10px;
+    }
+
+    .two-col,
+    .three-col {
+      display: grid;
+      gap: 10px;
+    }
+
+    .two-col { grid-template-columns: 1fr 1fr; }
+    .three-col { grid-template-columns: 1fr 1fr 1fr; }
+
+    label {
+      display: block;
+      font-size: 0.84rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    input[type="number"],
+    input[type="text"],
+    input[type="color"],
+    input[type="file"],
+    select,
+    button {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.92);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 10px 11px;
+      font: inherit;
+    }
+
+    input[type="file"] { padding: 8px; }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      margin-bottom: 12px;
+    }
+
+    button {
+      cursor: pointer;
+      font-weight: 600;
+      transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 20px rgba(44, 31, 16, 0.05);
+    }
+
+    button.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    button.soft {
+      background: var(--accent-soft);
+      border-color: #e2d5c5;
+    }
+
+    .toolbar {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .canvas-shell {
+      width: min(100%, 1120px);
+      background: rgba(255,255,255,0.72);
+      border: 1px solid #ddd5ca;
+      border-radius: 28px;
+      padding: 18px;
+      box-shadow: 0 22px 60px rgba(44, 31, 16, 0.10);
+    }
+
+    .canvas-wrap {
+      background: #ece5db;
+      border-radius: 18px;
+      padding: 14px;
+      overflow: auto;
+      min-height: 300px;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      background: #ffffff;
+      border-radius: 10px;
+    }
+
+    .status {
+      min-height: 1.2em;
+      margin-top: 12px;
+      font-size: 0.88rem;
+      color: var(--muted);
+    }
+
+    @media (max-width: 1180px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar, .rightbar {
+        border: 0;
+        border-bottom: 1px solid var(--line);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <h1 class="panel-title">Paspartu Düzenleyici</h1>
+
+      <section class="card">
+        <p class="group-title">1) Görsel</p>
+        <div class="field">
+          <label for="fileInput">Ana görsel yükle</label>
+          <input id="fileInput" type="file" accept="image/*" />
+        </div>
+      </section>
+
+      <section class="card">
+        <p class="group-title">2) A4 ve renkler</p>
+        <div class="two-col">
+          <div class="field">
+            <label for="paperPreset">Kalite</label>
+            <select id="paperPreset">
+              <option value="300">A4 • 300 DPI</option>
+              <option value="240">A4 • 240 DPI</option>
+              <option value="150">A4 • 150 DPI</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="orientation">Yön</label>
+            <select id="orientation">
+              <option value="portrait">Dikey</option>
+              <option value="landscape">Yatay</option>
+            </select>
+          </div>
+        </div>
+        <div class="two-col">
+          <div class="field">
+            <label for="canvasWidth">Genişlik</label>
+            <input id="canvasWidth" type="number" value="2480" readonly />
+          </div>
+          <div class="field">
+            <label for="canvasHeight">Yükseklik</label>
+            <input id="canvasHeight" type="number" value="3508" readonly />
+          </div>
+        </div>
+        <div class="two-col">
+          <div class="field">
+            <label for="matColor">Paspartu rengi</label>
+            <input id="matColor" type="color" value="#f8f5ef" />
+          </div>
+          <div class="field">
+            <label for="bgColor">Arka plan</label>
+            <input id="bgColor" type="color" value="#ffffff" />
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <p class="group-title">5) Alt alan içeriği</p>
+        <div class="two-col">
+          <div class="field">
+            <label for="bottomContentType">İçerik</label>
+            <select id="bottomContentType">
+              <option value="none">Yok</option>
+              <option value="text">Yazı</option>
+              <option value="image">Resim</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="bottomAlign">Hizalama</label>
+            <select id="bottomAlign">
+              <option value="center">Tam ortala</option>
+              <option value="left">Sola</option>
+              <option value="right">Sağa</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <button id="bottomSelectTextBtn" class="soft" type="button">Yazı kutusu</button>
+          <button id="bottomSelectImageBtn" class="soft" type="button">Resim kutusu</button>
+        </div>
+
+        <div class="two-col">
+          <div class="field">
+            <label for="bottomBoxX">X</label>
+            <input id="bottomBoxX" type="number" value="0" />
+          </div>
+          <div class="field">
+            <label for="bottomBoxY">Y</label>
+            <input id="bottomBoxY" type="number" value="0" />
+          </div>
+        </div>
+        <div class="two-col">
+          <div class="field">
+            <label for="bottomBoxWidth">Kutu genişliği</label>
+            <input id="bottomBoxWidth" type="number" value="900" />
+          </div>
+          <div class="field">
+            <label for="bottomBoxHeight">Kutu yüksekliği</label>
+            <input id="bottomBoxHeight" type="number" value="160" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="bottomText">Alt yazı</label>
+          <input id="bottomText" type="text" value="Eser Adı" />
+        </div>
+
+        <div class="three-col">
+          <div class="field">
+            <label for="bottomFontSize">Boyut</label>
+            <input id="bottomFontSize" type="number" min="8" max="300" value="42" />
+          </div>
+          <div class="field">
+            <label for="bottomTextScale">Ölçek</label>
+            <input id="bottomTextScale" type="number" min="0.2" max="5" step="0.05" value="1" />
+          </div>
+          <div class="field">
+            <label for="bottomTextColor">Renk</label>
+            <input id="bottomTextColor" type="color" value="#3a3128" />
+          </div>
+        </div>
+
+        <div class="three-col">
+          <div class="field">
+            <label for="bottomFontFamily">Font</label>
+            <select id="bottomFontFamily">
+              <option value="Arial, sans-serif">Arial</option>
+              <option value="Helvetica, Arial, sans-serif">Helvetica</option>
+              <option value="Verdana, sans-serif">Verdana</option>
+              <option value="Tahoma, sans-serif">Tahoma</option>
+              <option value="Trebuchet MS, sans-serif">Trebuchet MS</option>
+              <option value="Georgia, serif">Georgia</option>
+              <option value="Times New Roman, serif">Times New Roman</option>
+              <option value="Garamond, serif">Garamond</option>
+              <option value="Palatino Linotype, serif">Palatino</option>
+              <option value="Courier New, monospace">Courier New</option>
+              <option value="Impact, sans-serif">Impact</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="bottomFontWeight">Kalınlık</label>
+            <select id="bottomFontWeight">
+              <option value="400">Normal</option>
+              <option value="500">Medium</option>
+              <option value="600">Semi Bold</option>
+              <option value="700">Bold</option>
+              <option value="800">Extra Bold</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="bottomLetterSpacing">Harf aralığı</label>
+            <input id="bottomLetterSpacing" type="number" min="-5" max="40" step="0.5" value="0" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="bottomImageInput">Alt alan resmi</label>
+          <input id="bottomImageInput" type="file" accept="image/*" />
+        </div>
+
+        <div class="three-col">
+          <div class="field">
+            <label for="bottomImageScale">Resim ölçeği</label>
+            <input id="bottomImageScale" type="number" min="0.05" max="3" step="0.01" value="1" />
+          </div>
+          <div class="field">
+            <label for="bottomImageMaxHeight">Yükseklik oranı</label>
+            <input id="bottomImageMaxHeight" type="number" min="0.1" max="1" step="0.01" value="0.9" />
+          </div>
+          <div class="field">
+            <label for="bottomImageOpacity">Opaklık</label>
+            <input id="bottomImageOpacity" type="number" min="0.05" max="1" step="0.05" value="1" />
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <p class="group-title">6) Dışa aktarım</p>
+        <div class="two-col">
+          <div class="field">
+            <label for="exportScale">Ek ölçek</label>
+            <select id="exportScale">
+              <option value="1">1x</option>
+              <option value="1.5">1.5x</option>
+              <option value="2">2x</option>
+              <option value="3">3x</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="filename">Dosya adı</label>
+            <input id="filename" type="text" value="paspartu-cerceve" />
+          </div>
+        </div>
+        <button id="exportBtn" class="primary" type="button">PNG olarak indir</button>
+      </section>
+    </aside>
+
+    <main class="preview-wrap">
+      <div class="canvas-shell">
+        <div class="canvas-wrap">
+          <canvas id="previewCanvas" width="2480" height="3508"></canvas>
+        </div>
+        <div class="status" id="status">Hazır.</div>
+      </div>
+    </main>
+
+    <aside class="rightbar">
+      <h2 class="panel-title">Yerleşim</h2>
+
+      <section class="card">
+        <p class="group-title">3) Paspartu kalınlıkları</p>
+        <div class="row"><span>Üst</span><output id="topOut">180 px</output></div>
+        <input id="matTop" type="range" min="0" max="1000" value="180" />
+
+        <div class="row"><span>Sağ</span><output id="rightOut">180 px</output></div>
+        <input id="matRight" type="range" min="0" max="1000" value="180" />
+
+        <div class="row"><span>Alt</span><output id="bottomOut">260 px</output></div>
+        <input id="matBottom" type="range" min="0" max="1200" value="260" />
+
+        <div class="row"><span>Sol</span><output id="leftOut">180 px</output></div>
+        <input id="matLeft" type="range" min="0" max="1000" value="180" />
+      </section>
+
+      <section class="card">
+        <p class="group-title">4) Resim yerleşimi</p>
+        <div class="row"><span>Yakınlaştırma</span><output id="zoomOut">1.00x</output></div>
+        <input id="zoom" type="range" min="0.1" max="5" step="0.01" value="1" />
+
+        <div class="row"><span>Yatay</span><output id="offsetXOut">0 px</output></div>
+        <input id="offsetX" type="range" min="-3000" max="3000" step="1" value="0" />
+
+        <div class="row"><span>Dikey</span><output id="offsetYOut">0 px</output></div>
+        <input id="offsetY" type="range" min="-3000" max="3000" step="1" value="0" />
+
+        <div class="three-col">
+          <button id="fitBtn" type="button">Sığdır</button>
+          <button id="fillBtn" type="button">Doldur</button>
+          <button id="resetBtn" type="button">Ortala</button>
+        </div>
+        <div class="muted">Ana resmi fareyle sürükleyebilir, tekerlekle yakınlaştırabilirsin.</div>
+      </section>
+    </aside>
+  </div>
+
+  <script>
+    const els = {
+      fileInput: document.getElementById('fileInput'),
+      paperPreset: document.getElementById('paperPreset'),
+      orientation: document.getElementById('orientation'),
+      canvasWidth: document.getElementById('canvasWidth'),
+      canvasHeight: document.getElementById('canvasHeight'),
+      matColor: document.getElementById('matColor'),
+      bgColor: document.getElementById('bgColor'),
+      matTop: document.getElementById('matTop'),
+      matRight: document.getElementById('matRight'),
+      matBottom: document.getElementById('matBottom'),
+      matLeft: document.getElementById('matLeft'),
+      topOut: document.getElementById('topOut'),
+      rightOut: document.getElementById('rightOut'),
+      bottomOut: document.getElementById('bottomOut'),
+      leftOut: document.getElementById('leftOut'),
+      zoom: document.getElementById('zoom'),
+      offsetX: document.getElementById('offsetX'),
+      offsetY: document.getElementById('offsetY'),
+      zoomOut: document.getElementById('zoomOut'),
+      offsetXOut: document.getElementById('offsetXOut'),
+      offsetYOut: document.getElementById('offsetYOut'),
+      fitBtn: document.getElementById('fitBtn'),
+      fillBtn: document.getElementById('fillBtn'),
+      resetBtn: document.getElementById('resetBtn'),
+      bottomContentType: document.getElementById('bottomContentType'),
+      bottomAlign: document.getElementById('bottomAlign'),
+      bottomSelectTextBtn: document.getElementById('bottomSelectTextBtn'),
+      bottomSelectImageBtn: document.getElementById('bottomSelectImageBtn'),
+      bottomBoxX: document.getElementById('bottomBoxX'),
+      bottomBoxY: document.getElementById('bottomBoxY'),
+      bottomBoxWidth: document.getElementById('bottomBoxWidth'),
+      bottomBoxHeight: document.getElementById('bottomBoxHeight'),
+      bottomText: document.getElementById('bottomText'),
+      bottomFontSize: document.getElementById('bottomFontSize'),
+      bottomTextScale: document.getElementById('bottomTextScale'),
+      bottomTextColor: document.getElementById('bottomTextColor'),
+      bottomFontFamily: document.getElementById('bottomFontFamily'),
+      bottomFontWeight: document.getElementById('bottomFontWeight'),
+      bottomLetterSpacing: document.getElementById('bottomLetterSpacing'),
+      bottomImageInput: document.getElementById('bottomImageInput'),
+      bottomImageScale: document.getElementById('bottomImageScale'),
+      bottomImageMaxHeight: document.getElementById('bottomImageMaxHeight'),
+      bottomImageOpacity: document.getElementById('bottomImageOpacity'),
+      exportScale: document.getElementById('exportScale'),
+      exportBtn: document.getElementById('exportBtn'),
+      filename: document.getElementById('filename'),
+      canvas: document.getElementById('previewCanvas'),
+      status: document.getElementById('status')
+    };
+
+    const ctx = els.canvas.getContext('2d', { alpha: false });
+
+    const state = {
+      img: null,
+      imgName: '',
+      bottomImg: null,
+      bottomImgName: '',
+      zoom: 1,
+      offsetX: 0,
+      offsetY: 0,
+      dragging: false,
+      dragTarget: null,
+      dragStartX: 0,
+      dragStartY: 0,
+      originX: 0,
+      originY: 0,
+      startW: 0,
+      startH: 0,
+      activeBottomElement: 'text',
+      bottomBox: { x: 0, y: 0, width: 900, height: 160 }
+    };
+
+    function num(el) { return parseFloat(el.value) || 0; }
+
+    function applyPaperPreset() {
+      const preset = els.paperPreset.value;
+      const orientation = els.orientation.value;
+      const sizes = {
+        '300': { w: 2480, h: 3508 },
+        '240': { w: 1984, h: 2806 },
+        '150': { w: 1240, h: 1754 }
+      };
+      const base = sizes[preset] || sizes['300'];
+      const w = orientation === 'landscape' ? base.h : base.w;
+      const h = orientation === 'landscape' ? base.w : base.h;
+      els.canvasWidth.value = w;
+      els.canvasHeight.value = h;
+      els.canvas.width = w;
+      els.canvas.height = h;
+    }
+
+    function getLayout() {
+      const width = num(els.canvasWidth);
+      const height = num(els.canvasHeight);
+      const top = Math.max(0, num(els.matTop));
+      const right = Math.max(0, num(els.matRight));
+      const bottom = Math.max(0, num(els.matBottom));
+      const left = Math.max(0, num(els.matLeft));
+      return {
+        width, height, top, right, bottom, left,
+        innerW: Math.max(1, width - left - right),
+        innerH: Math.max(1, height - top - bottom)
+      };
+    }
+
+    function updateOutputs() {
+      els.topOut.value = `${num(els.matTop)} px`;
+      els.rightOut.value = `${num(els.matRight)} px`;
+      els.bottomOut.value = `${num(els.matBottom)} px`;
+      els.leftOut.value = `${num(els.matLeft)} px`;
+      els.zoomOut.value = `${num(els.zoom).toFixed(2)}x`;
+      els.offsetXOut.value = `${num(els.offsetX)} px`;
+      els.offsetYOut.value = `${num(els.offsetY)} px`;
+      els.bottomBoxX.value = Math.round(state.bottomBox.x);
+      els.bottomBoxY.value = Math.round(state.bottomBox.y);
+      els.bottomBoxWidth.value = Math.round(state.bottomBox.width);
+      els.bottomBoxHeight.value = Math.round(state.bottomBox.height);
+    }
+
+    function syncControls() {
+      els.zoom.value = state.zoom;
+      els.offsetX.value = Math.round(state.offsetX);
+      els.offsetY.value = Math.round(state.offsetY);
+      updateOutputs();
+    }
+
+    function loadFile(file, callback) {
+      if (!file) return;
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        callback(img, file.name);
+        URL.revokeObjectURL(url);
+      };
+      img.onerror = () => {
+        els.status.textContent = 'Görsel yüklenemedi.';
+        URL.revokeObjectURL(url);
+      };
+      img.src = url;
+    }
+
+    function fitImage(mode = 'cover') {
+      if (!state.img) return;
+      const layout = getLayout();
+      const sx = layout.innerW / state.img.naturalWidth;
+      const sy = layout.innerH / state.img.naturalHeight;
+      state.zoom = mode === 'contain' ? Math.min(sx, sy) : Math.max(sx, sy);
+      state.offsetX = 0;
+      state.offsetY = 0;
+      syncControls();
+      render();
+    }
+
+    function centerBottomBox() {
+      const layout = getLayout();
+      state.bottomBox.x = (layout.innerW - state.bottomBox.width) / 2;
+      state.bottomBox.y = layout.bottom > 0 ? (layout.bottom - state.bottomBox.height) / 2 : 0;
+      updateOutputs();
+    }
+
+    function drawPlaceholder(targetCtx) {
+      targetCtx.fillStyle = '#ffffff';
+      targetCtx.fillRect(0, 0, els.canvas.width, els.canvas.height);
+      targetCtx.strokeStyle = '#ddd6cd';
+      targetCtx.lineWidth = 6;
+      targetCtx.setLineDash([24, 18]);
+      targetCtx.strokeRect(120, 120, els.canvas.width - 240, els.canvas.height - 240);
+      targetCtx.setLineDash([]);
+      targetCtx.fillStyle = '#8c8174';
+      targetCtx.textAlign = 'center';
+      targetCtx.textBaseline = 'middle';
+      targetCtx.font = '600 60px Arial';
+      targetCtx.fillText('Görsel yükle', els.canvas.width / 2, els.canvas.height / 2 - 22);
+      targetCtx.font = '34px Arial';
+      targetCtx.fillText('A4 önizleme burada görünecek', els.canvas.width / 2, els.canvas.height / 2 + 34);
+    }
+
+    function drawSpacedText(targetCtx, text, x, y, align, letterSpacing) {
+      if (!letterSpacing) {
+        targetCtx.textAlign = align;
+        targetCtx.fillText(text, x, y);
+        return;
+      }
+      const chars = [...text];
+      const widths = chars.map(ch => targetCtx.measureText(ch).width);
+      const total = widths.reduce((a, b) => a + b, 0) + Math.max(0, chars.length - 1) * letterSpacing;
+      let startX = x;
+      if (align === 'center') startX = x - total / 2;
+      if (align === 'right') startX = x - total;
+      targetCtx.textAlign = 'left';
+      let cx = startX;
+      chars.forEach((ch, i) => {
+        targetCtx.fillText(ch, cx, y);
+        cx += widths[i] + letterSpacing;
+      });
+    }
+
+    function getBottomArea(layout, scale) {
+      return {
+        x: layout.left * scale,
+        y: (layout.height - layout.bottom) * scale,
+        w: layout.innerW * scale,
+        h: layout.bottom * scale
+      };
+    }
+
+    function getBottomBox(layout, scale) {
+      const area = getBottomArea(layout, scale);
+      return {
+        x: area.x + state.bottomBox.x * scale,
+        y: area.y + state.bottomBox.y * scale,
+        w: Math.max(20 * scale, state.bottomBox.width * scale),
+        h: Math.max(20 * scale, state.bottomBox.height * scale)
+      };
+    }
+
+    function drawBottomContent(targetCtx, layout, scale, showOverlay) {
+      const type = els.bottomContentType.value;
+      if (type === 'none' || layout.bottom <= 0) return;
+      const box = getBottomBox(layout, scale);
+      const align = els.bottomAlign.value;
+      const pad = Math.max(12 * scale, box.h * 0.08);
+
+      if (type === 'text') {
+        const text = (els.bottomText.value || '').trim();
+        if (text) {
+          const fontSize = Math.max(8, num(els.bottomFontSize)) * scale * Math.max(0.2, num(els.bottomTextScale));
+          const weight = els.bottomFontWeight.value || '400';
+          const letterSpacing = num(els.bottomLetterSpacing) * scale;
+          targetCtx.fillStyle = els.bottomTextColor.value;
+          targetCtx.font = `${weight} ${fontSize}px ${els.bottomFontFamily.value}`;
+          targetCtx.textBaseline = 'middle';
+          const x = align === 'left' ? box.x + pad : align === 'right' ? box.x + box.w - pad : box.x + box.w / 2;
+          const y = box.y + box.h / 2;
+          drawSpacedText(targetCtx, text, x, y, align, letterSpacing);
+        }
+      }
+
+      if (type === 'image' && state.bottomImg) {
+        const fitW = box.w * Math.max(0.05, Math.min(3, num(els.bottomImageScale)));
+        const fitH = box.h * Math.max(0.1, Math.min(1, num(els.bottomImageMaxHeight)));
+        const s = Math.min(fitW / state.bottomImg.naturalWidth, fitH / state.bottomImg.naturalHeight);
+        const drawW = state.bottomImg.naturalWidth * s;
+        const drawH = state.bottomImg.naturalHeight * s;
+        const x = align === 'left' ? box.x + pad : align === 'right' ? box.x + box.w - drawW - pad : box.x + (box.w - drawW) / 2;
+        const y = box.y + (box.h - drawH) / 2;
+        targetCtx.save();
+        targetCtx.globalAlpha = Math.max(0.05, Math.min(1, num(els.bottomImageOpacity)));
+        targetCtx.drawImage(state.bottomImg, x, y, drawW, drawH);
+        targetCtx.restore();
+      }
+
+      if (showOverlay) {
+        targetCtx.save();
+        targetCtx.strokeStyle = 'rgba(138,106,73,0.95)';
+        targetCtx.lineWidth = 2 * scale;
+        targetCtx.setLineDash([8 * scale, 6 * scale]);
+        targetCtx.strokeRect(box.x, box.y, box.w, box.h);
+        targetCtx.setLineDash([]);
+        const hs = 10 * scale;
+        [[box.x, box.y],[box.x + box.w, box.y],[box.x, box.y + box.h],[box.x + box.w, box.y + box.h]].forEach(([hx, hy]) => {
+          targetCtx.fillStyle = '#8a6a49';
+          targetCtx.fillRect(hx - hs / 2, hy - hs / 2, hs, hs);
+        });
+        targetCtx.restore();
+      }
+    }
+
+    function render(targetCtx = ctx, scale = 1, exportMode = false) {
+      applyPaperPreset();
+      const layout = getLayout();
+      targetCtx.imageSmoothingEnabled = true;
+      targetCtx.imageSmoothingQuality = 'high';
+      targetCtx.clearRect(0, 0, targetCtx.canvas.width, targetCtx.canvas.height);
+      targetCtx.fillStyle = els.bgColor.value;
+      targetCtx.fillRect(0, 0, targetCtx.canvas.width, targetCtx.canvas.height);
+
+      if (!state.img) {
+        drawPlaceholder(targetCtx);
+        return;
+      }
+
+      targetCtx.fillStyle = els.matColor.value;
+      targetCtx.fillRect(0, 0, targetCtx.canvas.width, targetCtx.canvas.height);
+
+      const frameX = layout.left * scale;
+      const frameY = layout.top * scale;
+      const frameW = layout.innerW * scale;
+      const frameH = layout.innerH * scale;
+      const drawW = state.img.naturalWidth * state.zoom * scale;
+      const drawH = state.img.naturalHeight * state.zoom * scale;
+      const cx = frameX + frameW / 2 + state.offsetX * scale;
+      const cy = frameY + frameH / 2 + state.offsetY * scale;
+      const dx = cx - drawW / 2;
+      const dy = cy - drawH / 2;
+
+      targetCtx.save();
+      targetCtx.beginPath();
+      targetCtx.rect(frameX, frameY, frameW, frameH);
+      targetCtx.clip();
+      targetCtx.drawImage(state.img, dx, dy, drawW, drawH);
+      targetCtx.restore();
+
+      targetCtx.strokeStyle = 'rgba(0,0,0,0.08)';
+      targetCtx.lineWidth = Math.max(1, scale);
+      targetCtx.strokeRect(frameX, frameY, frameW, frameH);
+
+      drawBottomContent(targetCtx, layout, scale, !exportMode);
+      els.status.textContent = `${state.imgName || 'Görsel'} • ${layout.width} × ${layout.height}px`;
+    }
+
+    function canvasPoint(e) {
+      const rect = els.canvas.getBoundingClientRect();
+      return {
+        x: (e.clientX - rect.left) * (els.canvas.width / rect.width),
+        y: (e.clientY - rect.top) * (els.canvas.height / rect.height)
+      };
+    }
+
+    function hitBottomBox(point) {
+      const layout = getLayout();
+      if (els.bottomContentType.value === 'none' || layout.bottom <= 0) return null;
+      const box = getBottomBox(layout, 1);
+      const hs = 16;
+      const handles = {
+        tl: [box.x, box.y],
+        tr: [box.x + box.w, box.y],
+        bl: [box.x, box.y + box.h],
+        br: [box.x + box.w, box.y + box.h]
+      };
+      for (const [key, [hx, hy]] of Object.entries(handles)) {
+        if (Math.abs(point.x - hx) <= hs && Math.abs(point.y - hy) <= hs) return key;
+      }
+      if (point.x >= box.x && point.x <= box.x + box.w && point.y >= box.y && point.y <= box.y + box.h) return 'move';
+      return null;
+    }
+
+    els.fileInput.addEventListener('change', e => {
+      loadFile(e.target.files[0], (img, name) => {
+        state.img = img;
+        state.imgName = name;
+        fitImage('cover');
+      });
+    });
+
+    els.bottomImageInput.addEventListener('change', e => {
+      loadFile(e.target.files[0], (img, name) => {
+        state.bottomImg = img;
+        state.bottomImgName = name;
+        els.bottomContentType.value = 'image';
+        state.activeBottomElement = 'image';
+        centerBottomBox();
+        render();
+      });
+    });
+
+    [
+      els.paperPreset, els.orientation, els.matColor, els.bgColor,
+      els.matTop, els.matRight, els.matBottom, els.matLeft,
+      els.zoom, els.offsetX, els.offsetY,
+      els.bottomContentType, els.bottomAlign,
+      els.bottomText, els.bottomFontSize, els.bottomTextScale, els.bottomTextColor,
+      els.bottomFontFamily, els.bottomFontWeight, els.bottomLetterSpacing,
+      els.bottomImageScale, els.bottomImageMaxHeight, els.bottomImageOpacity
+    ].forEach(el => el.addEventListener('input', () => {
+      state.zoom = num(els.zoom);
+      state.offsetX = num(els.offsetX);
+      state.offsetY = num(els.offsetY);
+      render();
+      updateOutputs();
+    }));
+
+    [els.bottomBoxX, els.bottomBoxY, els.bottomBoxWidth, els.bottomBoxHeight].forEach(el => {
+      el.addEventListener('input', () => {
+        state.bottomBox.x = num(els.bottomBoxX);
+        state.bottomBox.y = num(els.bottomBoxY);
+        state.bottomBox.width = Math.max(20, num(els.bottomBoxWidth));
+        state.bottomBox.height = Math.max(20, num(els.bottomBoxHeight));
+        render();
+        updateOutputs();
+      });
+    });
+
+    els.fitBtn.addEventListener('click', () => fitImage('contain'));
+    els.fillBtn.addEventListener('click', () => fitImage('cover'));
+    els.resetBtn.addEventListener('click', () => fitImage('cover'));
+
+    els.bottomSelectTextBtn.addEventListener('click', () => {
+      els.bottomContentType.value = 'text';
+      state.activeBottomElement = 'text';
+      centerBottomBox();
+      render();
+    });
+
+    els.bottomSelectImageBtn.addEventListener('click', () => {
+      els.bottomContentType.value = 'image';
+      state.activeBottomElement = 'image';
+      centerBottomBox();
+      render();
+    });
+
+    els.canvas.addEventListener('pointerdown', e => {
+      const point = canvasPoint(e);
+      const bottomHit = hitBottomBox(point);
+      if (bottomHit) {
+        state.dragging = true;
+        state.dragTarget = `bottom-${bottomHit}`;
+        state.dragStartX = point.x;
+        state.dragStartY = point.y;
+        state.originX = state.bottomBox.x;
+        state.originY = state.bottomBox.y;
+        state.startW = state.bottomBox.width;
+        state.startH = state.bottomBox.height;
+        els.canvas.setPointerCapture(e.pointerId);
+        return;
+      }
+      if (!state.img) return;
+      state.dragging = true;
+      state.dragTarget = 'main-image';
+      state.dragStartX = point.x;
+      state.dragStartY = point.y;
+      state.originX = state.offsetX;
+      state.originY = state.offsetY;
+      els.canvas.setPointerCapture(e.pointerId);
+    });
+
+    els.canvas.addEventListener('pointermove', e => {
+      if (!state.dragging) return;
+      const point = canvasPoint(e);
+      const dx = point.x - state.dragStartX;
+      const dy = point.y - state.dragStartY;
+
+      if (state.dragTarget === 'main-image') {
+        state.offsetX = state.originX + dx;
+        state.offsetY = state.originY + dy;
+        syncControls();
+        render();
+        return;
+      }
+
+      const mode = state.dragTarget.replace('bottom-', '');
+      if (mode === 'move') {
+        state.bottomBox.x = state.originX + dx;
+        state.bottomBox.y = state.originY + dy;
+      } else {
+        if (mode.includes('l')) {
+          state.bottomBox.x = state.originX + dx;
+          state.bottomBox.width = Math.max(20, state.startW - dx);
+        }
+        if (mode.includes('r')) {
+          state.bottomBox.width = Math.max(20, state.startW + dx);
+        }
+        if (mode.includes('t')) {
+          state.bottomBox.y = state.originY + dy;
+          state.bottomBox.height = Math.max(20, state.startH - dy);
+        }
+        if (mode.includes('b')) {
+          state.bottomBox.height = Math.max(20, state.startH + dy);
+        }
+      }
+      updateOutputs();
+      render();
+    });
+
+    function stopDrag(e) {
+      state.dragging = false;
+      state.dragTarget = null;
+      if (e && els.canvas.hasPointerCapture(e.pointerId)) {
+        els.canvas.releasePointerCapture(e.pointerId);
+      }
+    }
+
+    els.canvas.addEventListener('pointerup', stopDrag);
+    els.canvas.addEventListener('pointercancel', stopDrag);
+
+    els.canvas.addEventListener('wheel', e => {
+      if (!state.img) return;
+      e.preventDefault();
+      const factor = e.deltaY > 0 ? 0.95 : 1.05;
+      state.zoom = Math.max(0.1, Math.min(5, state.zoom * factor));
+      syncControls();
+      render();
+    }, { passive: false });
+
+    els.exportBtn.addEventListener('click', () => {
+      const scale = parseFloat(els.exportScale.value) || 1;
+      const out = document.createElement('canvas');
+      out.width = Math.round(num(els.canvasWidth) * scale);
+      out.height = Math.round(num(els.canvasHeight) * scale);
+      const outCtx = out.getContext('2d', { alpha: false });
+      render(outCtx, scale, true);
+      out.toBlob(blob => {
+        if (!blob) return;
+        const a = document.createElement('a');
+        const safe = (els.filename.value || 'paspartu-cerceve').trim().replace(/[\/:*?"<>|]+/g, '-');
+        const url = URL.createObjectURL(blob);
+        a.href = url;
+        a.download = `${safe}.png`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }, 'image/png');
+    });
+
+    applyPaperPreset();
+    centerBottomBox();
+    updateOutputs();
+    render();
+  </script>
+</body>
+</html>
