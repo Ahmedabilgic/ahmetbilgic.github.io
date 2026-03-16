@@ -6,73 +6,121 @@
   <title>Paspartu Çerçeve Editörü</title>
   <style>
     :root {
-      --bg: #f3f1ed;
-      --panel: rgba(255,255,255,0.86);
-      --line: #e3ddd5;
+      --bg: #f4f1ec;
+      --panel: rgba(255,255,255,0.78);
+      --panel-strong: rgba(255,255,255,0.92);
+      --line: #e7e0d7;
+      --line-strong: #d9cfc2;
       --text: #2f2a26;
       --muted: #7b736b;
       --accent: #8a6a49;
-      --accent-soft: #efe7de;
+      --accent-soft: #f4ede4;
+      --shadow: 0 14px 36px rgba(44, 31, 16, 0.06);
+      --radius: 20px;
+      --radius-sm: 14px;
     }
 
     * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
 
     body {
       margin: 0;
       font-family: Inter, Arial, Helvetica, sans-serif;
       color: var(--text);
-      background: linear-gradient(180deg, #f7f5f2 0%, #efebe6 100%);
+      background:
+        radial-gradient(circle at top left, rgba(255,255,255,0.7), transparent 28%),
+        linear-gradient(180deg, #f8f5f1 0%, #f0ebe4 100%);
     }
 
     .app {
       display: grid;
-      grid-template-columns: 300px minmax(0, 1fr) 300px;
+      grid-template-columns: 320px minmax(0, 1fr) 320px;
       min-height: 100vh;
       gap: 0;
     }
 
     .sidebar,
     .rightbar {
-      background: rgba(255,255,255,0.72);
-      backdrop-filter: blur(14px);
-      padding: 18px;
+      background: rgba(250,247,243,0.8);
+      backdrop-filter: blur(18px);
+      padding: 22px 18px 26px;
       overflow-y: auto;
     }
 
-    .sidebar { border-right: 1px solid var(--line); }
-    .rightbar { border-left: 1px solid var(--line); }
+    .sidebar { border-right: 1px solid rgba(217, 207, 194, 0.75); }
+    .rightbar { border-left: 1px solid rgba(217, 207, 194, 0.75); }
 
     .preview-wrap {
       display: grid;
       place-items: center;
-      padding: 22px;
+      padding: 26px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.28), rgba(255,255,255,0));
     }
 
     .panel-title {
-      font-size: 1.1rem;
-      font-weight: 700;
-      margin: 0 0 14px;
+      font-size: 1.05rem;
+      font-weight: 800;
+      margin: 0 0 16px;
       letter-spacing: -0.02em;
     }
 
     .card {
-      background: var(--panel);
+      position: relative;
+      background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,255,255,0.82));
       border: 1px solid var(--line);
-      border-radius: 18px;
-      padding: 14px;
-      box-shadow: 0 10px 28px rgba(44, 31, 16, 0.05);
-      margin-bottom: 12px;
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: var(--shadow);
+      margin-bottom: 14px;
     }
 
-    .group-title {
+    .card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      pointer-events: none;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
+    }
+
+     .group-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
       font-size: 0.95rem;
-      font-weight: 700;
-      margin: 0 0 12px;
+      font-weight: 800;
+      margin: 0 0 14px;
+      letter-spacing: -0.01em;
+    }
+
+    .group-title .step {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 26px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 0.76rem;
+      font-weight: 800;
+      border: 1px solid #e5d8c9;
+      flex: 0 0 auto;
+    }
+
+    .group-subtitle {
+      margin: -4px 0 14px;
+      font-size: 0.82rem;
+      color: var(--muted);
+      line-height: 1.45;
     }
 
     .muted {
       color: var(--muted);
-      font-size: 0.88rem;
+      font-size: 0.84rem;
+      line-height: 1.5;
     }
 
     .row {
@@ -80,28 +128,54 @@
       grid-template-columns: 1fr auto;
       gap: 10px;
       align-items: center;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
+      font-size: 0.88rem;
     }
 
     .field,
     .row-block {
-      margin-bottom: 10px;
+      margin-bottom: 8px;
+      min-width: 0;
     }
 
     .two-col,
-    .three-col {
+    .three-col,
+    .four-col {
       display: grid;
       gap: 10px;
     }
 
-    .two-col { grid-template-columns: 1fr 1fr; }
-    .three-col { grid-template-columns: 1fr 1fr 1fr; }
+    .two-col { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .three-col { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .four-col { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+    .section-stack {
+      display: grid;
+      gap: 10px;
+    }
+
+    .subpanel {
+      background: rgba(247,243,238,0.8);
+      border: 1px solid #ece4da;
+      border-radius: 16px;
+      padding: 10px;
+    }
+
+    .subpanel-title {
+      margin: 0 0 10px;
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #6f655b;
+    }
 
     label {
       display: block;
-      font-size: 0.84rem;
+      font-size: 0.76rem;
       color: var(--muted);
-      margin-bottom: 6px;
+      margin-bottom: 4px;
+      font-weight: 600;
     }
 
     input[type="number"],
@@ -112,65 +186,119 @@
     button {
       width: 100%;
       border: 1px solid var(--line);
-      background: rgba(255,255,255,0.92);
+      background: var(--panel-strong);
       color: var(--text);
-      border-radius: 12px;
-      padding: 10px 11px;
+      border-radius: var(--radius-sm);
+      padding: 6px 10px;
       font: inherit;
+      min-height: 32px;
+      transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease, transform 0.12s ease;
     }
 
-    input[type="file"] { padding: 8px; }
+    input[type="number"]:focus,
+    input[type="text"]:focus,
+    input[type="color"]:focus,
+    input[type="file"]:focus,
+    select:focus,
+    button:focus {
+      outline: none;
+      border-color: #c9b29a;
+      box-shadow: 0 0 0 4px rgba(138,106,73,0.10);
+    }
+
+    input[readonly] {
+      background: rgba(245,241,235,0.8);
+      color: #6a625a;
+    }
+
+    input[type="file"] {
+      padding: 6px 8px;
+      min-height: 34px;
+      background: rgba(255,255,255,0.88);
+    }
+
+    input[type="color"] {
+      padding: 4px 6px;
+      min-height: 32px;
+    }
 
     input[type="range"] {
       width: 100%;
       accent-color: var(--accent);
-      margin-bottom: 12px;
+      margin: 0 0 14px;
     }
 
     button {
       cursor: pointer;
-      font-weight: 600;
-      transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+      font-weight: 700;
     }
 
     button:hover {
       transform: translateY(-1px);
-      box-shadow: 0 8px 20px rgba(44, 31, 16, 0.05);
+      box-shadow: 0 10px 24px rgba(44, 31, 16, 0.06);
     }
 
     button.primary {
-      background: var(--accent);
-      border-color: var(--accent);
+      background: linear-gradient(180deg, #997452 0%, #856444 100%);
+      border-color: #8a6a49;
       color: #fff;
     }
 
     button.soft {
-      background: var(--accent-soft);
-      border-color: #e2d5c5;
+      background: rgba(255,255,255,0.95);
+      border-color: #e5dacd;
+      color: #4a4038;
     }
 
     .toolbar {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 10px;
-      margin-bottom: 10px;
+      margin-bottom: 2px;
+    }
+
+    .toolbar button {
+      min-height: 30px;
+      padding: 5px 8px;
+      font-size: 0.92rem;
+      letter-spacing: 0.01em;
+      font-weight: 800;
+    }
+
+    .toolbar button.active {
+      background: linear-gradient(180deg, #997452 0%, #856444 100%);
+      border-color: #8a6a49;
+      color: #fff;
+      box-shadow: 0 8px 20px rgba(44, 31, 16, 0.08);
+    }
+
+    .is-hidden {
+      display: none !important;
     }
 
     .canvas-shell {
       width: min(100%, 1120px);
       background: rgba(255,255,255,0.72);
       border: 1px solid #ddd5ca;
-      border-radius: 28px;
+      border-radius: 30px;
       padding: 18px;
-      box-shadow: 0 22px 60px rgba(44, 31, 16, 0.10);
+      box-shadow: 0 24px 70px rgba(44, 31, 16, 0.10);
+      backdrop-filter: blur(18px);
     }
 
     .canvas-wrap {
-      background: #ece5db;
-      border-radius: 18px;
+      background: linear-gradient(180deg, #ede4d9 0%, #e7ded2 100%);
+      border-radius: 22px;
       padding: 14px;
       overflow: auto;
       min-height: 300px;
+      position: relative;
+      transition: background 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .canvas-wrap.dragover {
+      background: linear-gradient(180deg, #efe7dc 0%, #e7ddcf 100%);
+      box-shadow: inset 0 0 0 2px rgba(138,106,73,0.28);
     }
 
     canvas {
@@ -178,7 +306,7 @@
       width: 100%;
       height: auto;
       background: #ffffff;
-      border-radius: 10px;
+      border-radius: 12px;
     }
 
     .status {
@@ -188,11 +316,46 @@
       color: var(--muted);
     }
 
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: rgba(244,237,228,0.9);
+      color: #6f5b46;
+      border: 1px solid #e8dccd;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
     @media (max-width: 1180px) {
       .app { grid-template-columns: 1fr; }
       .sidebar, .rightbar {
         border: 0;
         border-bottom: 1px solid var(--line);
+      }
+    }
+
+    @media (max-width: 640px) {
+      .sidebar,
+      .rightbar,
+      .preview-wrap {
+        padding: 14px;
+      }
+
+      .two-col,
+      .three-col,
+      .four-col,
+      .toolbar {
+        grid-template-columns: 1fr;
       }
     }
   </style>
@@ -203,7 +366,7 @@
       <h1 class="panel-title">Paspartu Düzenleyici</h1>
 
       <section class="card">
-        <p class="group-title">1) Görsel</p>
+        <p class="group-title"><span class="step">1</span> <span>Görsel</span></p>
         <div class="field">
           <label for="fileInput">Ana görsel yükle</label>
           <input id="fileInput" type="file" accept="image/*" />
@@ -211,7 +374,7 @@
       </section>
 
       <section class="card">
-        <p class="group-title">2) A4 ve renkler</p>
+        <p class="group-title"><span class="step">2</span> <span>A4 ve renkler</span></p>
         <div class="two-col">
           <div class="field">
             <label for="paperPreset">Kalite</label>
@@ -242,7 +405,7 @@
         <div class="two-col">
           <div class="field">
             <label for="matColor">Paspartu rengi</label>
-            <input id="matColor" type="color" value="#f8f5ef" />
+            <input id="matColor" type="color" value="#ffffff" />
           </div>
           <div class="field">
             <label for="bgColor">Arka plan</label>
@@ -252,128 +415,139 @@
       </section>
 
       <section class="card">
-        <p class="group-title">5) Alt alan içeriği</p>
-        <div class="two-col">
-          <div class="field">
-            <label for="bottomContentType">İçerik</label>
-            <select id="bottomContentType">
-              <option value="none">Yok</option>
-              <option value="text">Yazı</option>
-              <option value="image">Resim</option>
-            </select>
+        <p class="group-title"><span class="step">5</span> <span>Alt alan içeriği</span></p>
+        <div class="section-stack">
+          <div class="subpanel">
+            <p class="subpanel-title">İçerik tipi</p>
+            <div class="two-col">
+              <div class="field">
+                <label for="bottomContentType">İçerik</label>
+                <select id="bottomContentType">
+                  <option value="none">Yok</option>
+                  <option value="text">Yazı</option>
+                  <option value="image">Resim</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="bottomAlign">Hizalama</label>
+                <select id="bottomAlign">
+                  <option value="center">Tam ortala</option>
+                  <option value="left">Sola</option>
+                  <option value="right">Sağa</option>
+                </select>
+              </div>
+            </div>
+            <div class="toolbar">
+              <button id="bottomSelectTextBtn" class="soft" type="button">Yazı</button>
+              <button id="bottomSelectImageBtn" class="soft" type="button">Resim</button>
+            </div>
           </div>
-          <div class="field">
-            <label for="bottomAlign">Hizalama</label>
-            <select id="bottomAlign">
-              <option value="center">Tam ortala</option>
-              <option value="left">Sola</option>
-              <option value="right">Sağa</option>
-            </select>
-          </div>
-        </div>
 
-        <div class="toolbar">
-          <button id="bottomSelectTextBtn" class="soft" type="button">Yazı kutusu</button>
-          <button id="bottomSelectImageBtn" class="soft" type="button">Resim kutusu</button>
-        </div>
+          <div class="subpanel" id="bottomBoxPanel">
+            <p class="subpanel-title">Kutu yerleşimi</p>
+            <div class="two-col">
+              <div class="field">
+                <label for="bottomBoxX">X</label>
+                <input id="bottomBoxX" type="number" value="0" />
+              </div>
+              <div class="field">
+                <label for="bottomBoxY">Y</label>
+                <input id="bottomBoxY" type="number" value="0" />
+              </div>
+            </div>
+            <div class="two-col">
+              <div class="field">
+                <label for="bottomBoxWidth">Kutu genişliği</label>
+                <input id="bottomBoxWidth" type="number" value="900" />
+              </div>
+              <div class="field">
+                <label for="bottomBoxHeight">Kutu yüksekliği</label>
+                <input id="bottomBoxHeight" type="number" value="160" />
+              </div>
+            </div>
+          </div>
 
-        <div class="two-col">
-          <div class="field">
-            <label for="bottomBoxX">X</label>
-            <input id="bottomBoxX" type="number" value="0" />
+          <div class="subpanel" id="bottomTextPanel">
+            <p class="subpanel-title">Metin ayarları</p>
+            <div class="field">
+              <label for="bottomText">Alt yazı</label>
+              <input id="bottomText" type="text" value="Eser Adı" />
+            </div>
+            <div class="three-col">
+              <div class="field">
+                <label for="bottomFontSize">Boyut</label>
+                <input id="bottomFontSize" type="number" min="8" max="300" value="42" />
+              </div>
+              <div class="field">
+                <label for="bottomTextScale">Ölçek</label>
+                <input id="bottomTextScale" type="number" min="0.2" max="5" step="0.05" value="1" />
+              </div>
+              <div class="field">
+                <label for="bottomTextColor">Renk</label>
+                <input id="bottomTextColor" type="color" value="#3a3128" />
+              </div>
+            </div>
+            <div class="three-col">
+              <div class="field">
+                <label for="bottomFontFamily">Font</label>
+                <select id="bottomFontFamily">
+                  <option value="Arial, sans-serif">Arial</option>
+                  <option value="Helvetica, Arial, sans-serif">Helvetica</option>
+                  <option value="Verdana, sans-serif">Verdana</option>
+                  <option value="Tahoma, sans-serif">Tahoma</option>
+                  <option value="Trebuchet MS, sans-serif">Trebuchet MS</option>
+                  <option value="Georgia, serif">Georgia</option>
+                  <option value="Times New Roman, serif">Times New Roman</option>
+                  <option value="Garamond, serif">Garamond</option>
+                  <option value="Palatino Linotype, serif">Palatino</option>
+                  <option value="Courier New, monospace">Courier New</option>
+                  <option value="Impact, sans-serif">Impact</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="bottomFontWeight">Kalınlık</label>
+                <select id="bottomFontWeight">
+                  <option value="300">İnce</option>
+                  <option value="400" selected>Normal</option>
+                  <option value="500">Medium</option>
+                  <option value="600">Semi Bold</option>
+                  <option value="700">Bold</option>
+                  <option value="800">Extra Bold</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="bottomLetterSpacing">Harf aralığı</label>
+                <input id="bottomLetterSpacing" type="number" min="-5" max="40" step="0.5" value="0" />
+              </div>
+            </div>
           </div>
-          <div class="field">
-            <label for="bottomBoxY">Y</label>
-            <input id="bottomBoxY" type="number" value="0" />
-          </div>
-        </div>
-        <div class="two-col">
-          <div class="field">
-            <label for="bottomBoxWidth">Kutu genişliği</label>
-            <input id="bottomBoxWidth" type="number" value="900" />
-          </div>
-          <div class="field">
-            <label for="bottomBoxHeight">Kutu yüksekliği</label>
-            <input id="bottomBoxHeight" type="number" value="160" />
-          </div>
-        </div>
 
-        <div class="field">
-          <label for="bottomText">Alt yazı</label>
-          <input id="bottomText" type="text" value="Eser Adı" />
-        </div>
-
-        <div class="three-col">
-          <div class="field">
-            <label for="bottomFontSize">Boyut</label>
-            <input id="bottomFontSize" type="number" min="8" max="300" value="42" />
-          </div>
-          <div class="field">
-            <label for="bottomTextScale">Ölçek</label>
-            <input id="bottomTextScale" type="number" min="0.2" max="5" step="0.05" value="1" />
-          </div>
-          <div class="field">
-            <label for="bottomTextColor">Renk</label>
-            <input id="bottomTextColor" type="color" value="#3a3128" />
-          </div>
-        </div>
-
-        <div class="three-col">
-          <div class="field">
-            <label for="bottomFontFamily">Font</label>
-            <select id="bottomFontFamily">
-              <option value="Arial, sans-serif">Arial</option>
-              <option value="Helvetica, Arial, sans-serif">Helvetica</option>
-              <option value="Verdana, sans-serif">Verdana</option>
-              <option value="Tahoma, sans-serif">Tahoma</option>
-              <option value="Trebuchet MS, sans-serif">Trebuchet MS</option>
-              <option value="Georgia, serif">Georgia</option>
-              <option value="Times New Roman, serif">Times New Roman</option>
-              <option value="Garamond, serif">Garamond</option>
-              <option value="Palatino Linotype, serif">Palatino</option>
-              <option value="Courier New, monospace">Courier New</option>
-              <option value="Impact, sans-serif">Impact</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="bottomFontWeight">Kalınlık</label>
-            <select id="bottomFontWeight">
-              <option value="400">Normal</option>
-              <option value="500">Medium</option>
-              <option value="600">Semi Bold</option>
-              <option value="700">Bold</option>
-              <option value="800">Extra Bold</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="bottomLetterSpacing">Harf aralığı</label>
-            <input id="bottomLetterSpacing" type="number" min="-5" max="40" step="0.5" value="0" />
-          </div>
-        </div>
-
-        <div class="field">
-          <label for="bottomImageInput">Alt alan resmi</label>
-          <input id="bottomImageInput" type="file" accept="image/*" />
-        </div>
-
-        <div class="three-col">
-          <div class="field">
-            <label for="bottomImageScale">Resim ölçeği</label>
-            <input id="bottomImageScale" type="number" min="0.05" max="3" step="0.01" value="1" />
-          </div>
-          <div class="field">
-            <label for="bottomImageMaxHeight">Yükseklik oranı</label>
-            <input id="bottomImageMaxHeight" type="number" min="0.1" max="1" step="0.01" value="0.9" />
-          </div>
-          <div class="field">
-            <label for="bottomImageOpacity">Opaklık</label>
-            <input id="bottomImageOpacity" type="number" min="0.05" max="1" step="0.05" value="1" />
+          <div class="subpanel" id="bottomImagePanel">
+            <p class="subpanel-title">Görsel ayarları</p>
+            <div class="field">
+              <label for="bottomImageInput">Alt alan resmi</label>
+              <input id="bottomImageInput" type="file" accept="image/*" />
+            </div>
+            <div class="three-col">
+              <div class="field">
+                <label for="bottomImageScale">Resim ölçeği</label>
+                <input id="bottomImageScale" type="number" min="0.05" max="3" step="0.01" value="1" />
+              </div>
+              <div class="field">
+                <label for="bottomImageMaxHeight">Yükseklik oranı</label>
+                <input id="bottomImageMaxHeight" type="number" min="0.1" max="1" step="0.01" value="0.9" />
+              </div>
+              <div class="field">
+                <label for="bottomImageOpacity">Opaklık</label>
+                <input id="bottomImageOpacity" type="number" min="0.05" max="1" step="0.05" value="1" />
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       <section class="card">
-        <p class="group-title">6) Dışa aktarım</p>
+        <p class="group-title"><span class="step">6</span> <span>Dışa aktarım</span></p>
         <div class="two-col">
           <div class="field">
             <label for="exportScale">Ek ölçek</label>
@@ -395,10 +569,10 @@
 
     <main class="preview-wrap">
       <div class="canvas-shell">
-        <div class="canvas-wrap">
+        <div class="canvas-wrap" id="canvasDropzone" tabindex="0" aria-label="Onizleme alani">
           <canvas id="previewCanvas" width="2480" height="3508"></canvas>
         </div>
-        <div class="status" id="status">Hazır.</div>
+        <div class="status" id="status">Hazır. Görseli buraya sürükleyip bırakabilir veya soldan yükleyebilirsin.</div>
       </div>
     </main>
 
@@ -406,7 +580,7 @@
       <h2 class="panel-title">Yerleşim</h2>
 
       <section class="card">
-        <p class="group-title">3) Paspartu kalınlıkları</p>
+        <p class="group-title"><span class="step">3</span> <span>Paspartu kalınlıkları</span></p>
         <div class="row"><span>Üst</span><output id="topOut">180 px</output></div>
         <input id="matTop" type="range" min="0" max="1000" value="180" />
 
@@ -421,7 +595,7 @@
       </section>
 
       <section class="card">
-        <p class="group-title">4) Resim yerleşimi</p>
+        <p class="group-title"><span class="step">4</span> <span>Resim yerleşimi</span></p>
         <div class="row"><span>Yakınlaştırma</span><output id="zoomOut">1.00x</output></div>
         <input id="zoom" type="range" min="0.1" max="5" step="0.01" value="1" />
 
@@ -436,7 +610,7 @@
           <button id="fillBtn" type="button">Doldur</button>
           <button id="resetBtn" type="button">Ortala</button>
         </div>
-        <div class="muted">Ana resmi fareyle sürükleyebilir, tekerlekle yakınlaştırabilirsin.</div>
+        <div class="muted">Ana resmi fareyle sürükleyebilir, tekerlekle yakınlaştırabilir ve önizleme alanına tıklayıp yön tuşlarıyla hareket ettirebilirsin. Shift ile 10 px ilerler.</div>
       </section>
     </aside>
   </div>
@@ -471,10 +645,10 @@
       bottomAlign: document.getElementById('bottomAlign'),
       bottomSelectTextBtn: document.getElementById('bottomSelectTextBtn'),
       bottomSelectImageBtn: document.getElementById('bottomSelectImageBtn'),
+      bottomBoxPanel: document.getElementById('bottomBoxPanel'),
+      bottomTextPanel: document.getElementById('bottomTextPanel'),
+      bottomImagePanel: document.getElementById('bottomImagePanel'),
       bottomBoxX: document.getElementById('bottomBoxX'),
-      bottomBoxY: document.getElementById('bottomBoxY'),
-      bottomBoxWidth: document.getElementById('bottomBoxWidth'),
-      bottomBoxHeight: document.getElementById('bottomBoxHeight'),
       bottomText: document.getElementById('bottomText'),
       bottomFontSize: document.getElementById('bottomFontSize'),
       bottomTextScale: document.getElementById('bottomTextScale'),
@@ -482,6 +656,9 @@
       bottomFontFamily: document.getElementById('bottomFontFamily'),
       bottomFontWeight: document.getElementById('bottomFontWeight'),
       bottomLetterSpacing: document.getElementById('bottomLetterSpacing'),
+      bottomBoxY: document.getElementById('bottomBoxY'),
+      bottomBoxWidth: document.getElementById('bottomBoxWidth'),
+      bottomBoxHeight: document.getElementById('bottomBoxHeight'),
       bottomImageInput: document.getElementById('bottomImageInput'),
       bottomImageScale: document.getElementById('bottomImageScale'),
       bottomImageMaxHeight: document.getElementById('bottomImageMaxHeight'),
@@ -490,6 +667,7 @@
       exportBtn: document.getElementById('exportBtn'),
       filename: document.getElementById('filename'),
       canvas: document.getElementById('previewCanvas'),
+      canvasDropzone: document.getElementById('canvasDropzone'),
       status: document.getElementById('status')
     };
 
@@ -569,6 +747,21 @@
       updateOutputs();
     }
 
+    function updateBottomPanels() {
+      const type = els.bottomContentType.value;
+      const showText = type === 'text';
+      const showImage = type === 'image';
+      const showBox = type !== 'none';
+
+      els.bottomBoxPanel.classList.toggle('is-hidden', !showBox);
+      els.bottomTextPanel.classList.toggle('is-hidden', !showText);
+      els.bottomImagePanel.classList.toggle('is-hidden', !showImage);
+      els.bottomSelectTextBtn.classList.toggle('active', showText);
+      els.bottomSelectImageBtn.classList.toggle('active', showImage);
+      els.bottomSelectTextBtn.setAttribute('aria-pressed', showText ? 'true' : 'false');
+      els.bottomSelectImageBtn.setAttribute('aria-pressed', showImage ? 'true' : 'false');
+    }
+
     function loadFile(file, callback) {
       if (!file) return;
       const url = URL.createObjectURL(file);
@@ -582,6 +775,26 @@
         URL.revokeObjectURL(url);
       };
       img.src = url;
+    }
+
+    function handleImageFile(file) {
+      if (!file || !file.type || !file.type.startsWith('image/')) {
+        els.status.textContent = 'Lütfen geçerli bir görsel dosyası bırak.';
+        return;
+      }
+      loadFile(file, (img, name) => {
+        state.img = img;
+        state.imgName = name;
+        fitImage('cover');
+      });
+    }
+
+    function nudgeMainImage(dx, dy) {
+      if (!state.img) return;
+      state.offsetX += dx;
+      state.offsetY += dy;
+      syncControls();
+      render();
     }
 
     function fitImage(mode = 'cover') {
@@ -618,6 +831,26 @@
       targetCtx.fillText('Görsel yükle', els.canvas.width / 2, els.canvas.height / 2 - 22);
       targetCtx.font = '34px Arial';
       targetCtx.fillText('A4 önizleme burada görünecek', els.canvas.width / 2, els.canvas.height / 2 + 34);
+    }
+
+    function drawSpacedText(targetCtx, text, x, y, align, letterSpacing) {
+      if (!letterSpacing) {
+        targetCtx.textAlign = align;
+        targetCtx.fillText(text, x, y);
+        return;
+      }
+      const chars = [...text];
+      const widths = chars.map(ch => targetCtx.measureText(ch).width);
+      const total = widths.reduce((a, b) => a + b, 0) + Math.max(0, chars.length - 1) * letterSpacing;
+      let startX = x;
+      if (align === 'center') startX = x - total / 2;
+      if (align === 'right') startX = x - total;
+      targetCtx.textAlign = 'left';
+      let cx = startX;
+      chars.forEach((ch, i) => {
+        targetCtx.fillText(ch, cx, y);
+        cx += widths[i] + letterSpacing;
+      });
     }
 
     function drawSpacedText(targetCtx, text, x, y, align, letterSpacing) {
@@ -781,11 +1014,7 @@
     }
 
     els.fileInput.addEventListener('change', e => {
-      loadFile(e.target.files[0], (img, name) => {
-        state.img = img;
-        state.imgName = name;
-        fitImage('cover');
-      });
+      handleImageFile(e.target.files[0]);
     });
 
     els.bottomImageInput.addEventListener('change', e => {
@@ -795,6 +1024,7 @@
         els.bottomContentType.value = 'image';
         state.activeBottomElement = 'image';
         centerBottomBox();
+        updateBottomPanels();
         render();
       });
     });
@@ -811,6 +1041,7 @@
       state.zoom = num(els.zoom);
       state.offsetX = num(els.offsetX);
       state.offsetY = num(els.offsetY);
+      updateBottomPanels();
       render();
       updateOutputs();
     }));
@@ -834,6 +1065,7 @@
       els.bottomContentType.value = 'text';
       state.activeBottomElement = 'text';
       centerBottomBox();
+      updateBottomPanels();
       render();
     });
 
@@ -841,6 +1073,7 @@
       els.bottomContentType.value = 'image';
       state.activeBottomElement = 'image';
       centerBottomBox();
+      updateBottomPanels();
       render();
     });
 
@@ -927,6 +1160,62 @@
       render();
     }, { passive: false });
 
+    els.canvasDropzone.addEventListener('pointerdown', () => {
+      els.canvasDropzone.focus();
+    });
+
+    els.canvasDropzone.addEventListener('keydown', e => {
+      const tag = e.target && e.target.tagName ? e.target.tagName.toLowerCase() : '';
+      if (['input', 'select', 'textarea', 'button'].includes(tag)) return;
+      if (!state.img) return;
+
+      const step = e.shiftKey ? 10 : 1;
+
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        nudgeMainImage(-step, 0);
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        nudgeMainImage(step, 0);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        nudgeMainImage(0, -step);
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        nudgeMainImage(0, step);
+      }
+    });
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+      els.canvasDropzone.addEventListener(eventName, e => {
+        e.preventDefault();
+        e.stopPropagation();
+        els.canvasDropzone.classList.add('dragover');
+        els.status.textContent = 'Görseli bırakabilirsin.';
+      });
+    });
+
+    ['dragleave', 'dragend'].forEach(eventName => {
+      els.canvasDropzone.addEventListener(eventName, e => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.target === els.canvasDropzone) {
+          els.canvasDropzone.classList.remove('dragover');
+          els.status.textContent = state.imgName
+            ? `${state.imgName} • ${num(els.canvasWidth)} × ${num(els.canvasHeight)}px`
+            : 'Hazır. Görseli buraya sürükleyip bırakabilir veya soldan yükleyebilirsin.';
+        }
+      });
+    });
+
+    els.canvasDropzone.addEventListener('drop', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      els.canvasDropzone.classList.remove('dragover');
+      const file = e.dataTransfer && e.dataTransfer.files ? e.dataTransfer.files[0] : null;
+      handleImageFile(file);
+    });
+
     els.exportBtn.addEventListener('click', () => {
       const scale = parseFloat(els.exportScale.value) || 1;
       const out = document.createElement('canvas');
@@ -951,6 +1240,7 @@
     applyPaperPreset();
     centerBottomBox();
     updateOutputs();
+    updateBottomPanels();
     render();
   </script>
 </body>
