@@ -358,7 +358,15 @@
         grid-template-columns: 1fr;
       }
     }
-  </style>
+  
+.shortcut-inline{
+  margin-top:6px;
+  font-size:0.78rem;
+  line-height:1.4;
+  opacity:0.85;
+}
+
+</style>
 </head>
 <body>
   <div class="app">
@@ -610,7 +618,11 @@
           <button id="fillBtn" type="button">Doldur</button>
           <button id="resetBtn" type="button">Ortala</button>
         </div>
-        <div class="muted">Ana resmi fareyle sürükleyebilir, tekerlekle yakınlaştırabilir ve önizleme alanına tıklayıp yön tuşlarıyla hareket ettirebilirsin. Shift ile 10 px ilerler.</div>
+        <div class="muted shortcut-inline">
+🌀 zoom · ← ↑ → ↓ =1px<br>
+⇧ Shift + ← ↑ → ↓ =10px<br>
+Ctrl + ← ↑ → ↓ =ince ayar
+</div>
       </section>
     </aside>
   </div>
