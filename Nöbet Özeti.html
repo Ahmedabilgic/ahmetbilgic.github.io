@@ -315,7 +315,7 @@
       button { width: 100%; }
       th, td { padding: 11px 10px; }
     }
-  
+
     .output-header {
       display:flex;
       justify-content:space-between;
@@ -335,8 +335,7 @@
     .copy-btn-top:hover{
       background:#e8eef7;
     }
-
-</style>
+  </style>
 </head>
 <body>
   <div class="wrap">
@@ -350,8 +349,6 @@
         <h2>Veri Girişi</h2>
         <div class="mini-note">Tarih | Gün | MESAİ | A | B | C</div>
       </div>
-
-      
 
       <label class="field-label" for="excelFile">Dosya seç</label>
       <input id="excelFile" type="file" accept=".csv,.xlsx,.xls" />
@@ -390,8 +387,8 @@
           <thead>
             <tr>
               <th>Personel (Toplam Nöbet)</th>
-              <th>(Hafta sonu sayısı)</th>
-              <th>Nöbet Günleri (virgülle, tek satır)</th>
+              <th>Hafta Sonu</th>
+              <th>Nöbetler</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -399,9 +396,9 @@
       </div>
 
       <div style="display:flex;justify-content:space-between;align-items:center;">
-<div class="subtle-title">Metin Önizleme</div>
-<button id="copyPreviewTableBtn" class="copy-btn-top">Tablo Olarak Kopyala</button>
-</div>
+        <div class="subtle-title">Metin Önizleme</div>
+        <button id="copyPreviewTableBtn" class="copy-btn-top">Tablo Olarak Kopyala</button>
+      </div>
       <div id="textOutput" class="mono small"></div>
       <div id="wordCopyArea" class="sr-only-area"></div>
       <table id="plainCopyTable" class="sr-only-area"></table>
@@ -603,7 +600,7 @@
     }
 
     function downloadCsv() {
-      const rows = [['Personel (Toplam Nöbet)', '(Hafta sonu sayısı)', 'Nöbet Günleri (virgülle, tek satır)']];
+      const rows = [['Personel (Toplam Nöbet)', 'Hafta Sonu', 'Nöbetler']];
       const bodyRows = Array.from(tbody.querySelectorAll('tr'));
       if (!bodyRows.length) {
         setStatus('error', 'İndirilecek çıktı yok. Önce özet oluşturun.');
@@ -663,8 +660,6 @@
       }
     });
 
-    
-    
     async function copyTableOutput() {
       const rows = Array.from(document.querySelectorAll('#resultTable tr'));
       if (!rows.length) {
@@ -704,7 +699,7 @@
       }
 
       const rows = [
-        ['Personel (Toplam Nöbet)', '(Hafta sonu sayısı)', 'Nöbet Günleri (virgülle, tek satır)'],
+        ['Personel (Toplam Nöbet)', 'Hafta Sonu', 'Nöbetler'],
         ...bodyRows
       ];
 
@@ -717,7 +712,7 @@
       setStatus('ok', 'Excel dosyası indirildi.');
     }
 
-async function copyWordOutput() {
+    async function copyWordOutput() {
       const bodyRows = Array.from(tbody.querySelectorAll('tr'));
       if (!bodyRows.length) {
         setStatus('error', 'Kopyalanacak çıktı yok. Önce özet oluşturun.');
@@ -730,8 +725,8 @@ async function copyWordOutput() {
           <thead>
             <tr>
               <th style="padding:6px 8px;">Personel (Toplam Nöbet)</th>
-              <th style="padding:6px 8px;">(Hafta sonu sayısı)</th>
-              <th style="padding:6px 8px;">Nöbet Günleri (virgülle, tek satır)</th>
+              <th style="padding:6px 8px;">Hafta Sonu</th>
+              <th style="padding:6px 8px;">Nöbetler</th>
             </tr>
           </thead>
           <tbody>
@@ -781,7 +776,7 @@ async function copyWordOutput() {
       }
     }
 
-document.getElementById('generateBtn').addEventListener('click', generate);
+    document.getElementById('generateBtn').addEventListener('click', generate);
     document.getElementById('loadSampleBtn').addEventListener('click', () => {
       input.value = `Tarih\tGün\tMESAİ\tA\tB\tC\n`;
       clearStatus();
@@ -789,9 +784,9 @@ document.getElementById('generateBtn').addEventListener('click', generate);
     });
     document.getElementById('copyTableBtn').addEventListener('click', copyTableOutput);
     const topBtn = document.getElementById('copyTableBtnTop');
-    if(topBtn){ topBtn.addEventListener('click', copyTableOutput);}
+    if (topBtn) { topBtn.addEventListener('click', copyTableOutput); }
     const previewBtn = document.getElementById('copyPreviewTableBtn');
-    if(previewBtn){ previewBtn.addEventListener('click', copyTableOutput);}
+    if (previewBtn) { previewBtn.addEventListener('click', copyTableOutput); }
     document.getElementById('copyWordBtn').addEventListener('click', copyWordOutput);
     document.getElementById('copyTextBtn').addEventListener('click', copyTextOutput);
     document.getElementById('downloadXlsxBtn').addEventListener('click', downloadXlsxOutput);
@@ -799,4 +794,3 @@ document.getElementById('generateBtn').addEventListener('click', generate);
   </script>
 </body>
 </html>
-
