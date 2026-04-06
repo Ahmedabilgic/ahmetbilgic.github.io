@@ -287,12 +287,11 @@
     const rowsInput = document.getElementById('rowsInput');
     const colsInput = document.getElementById('colsInput');
     const dropZone = document.getElementById('dropZone');
-    const dropHint = document.getElementById('dropHint');
     const thumbGrid = document.getElementById('thumbGrid');
     const generateBtn = document.getElementById('generateBtn');
     const downloadBtn = document.getElementById('downloadBtn');
     const canvas = document.getElementById('previewCanvas');
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { alpha: false });
 
     let droppedFiles = [];
     let cropStates = [];
@@ -309,8 +308,14 @@
       titleFontSize: 58,
       titleBandHeight: 70,
       background: '#ffffff',
-      thumbHeight: 180
+      thumbHeight: 180,
+      maxCanvasSide: 8192,
+      maxCanvasArea: 268000000
     };
+
+    function getDropHintEl() {
+      return document.getElementById('dropHint');
+    }
 
     function getGridConfig() {
       const rows = Math.max(1, parseInt(rowsInput.value, 10) || 2);
@@ -322,7 +327,15 @@
       const { rows, cols, total } = getGridConfig();
       document.getElementById('mainTitle').textContent = `${rows}x${cols} Kolaj Oluşturucu`;
       document.getElementById('descText').textContent = `${total} fotoğraf yükle, başlığı yaz, ardından kolajı oluştur ve indir.`;
-      dropHint.textContent = `${total} fotoğrafı aynı anda sayfaya bırakabilirsin`;
+      const dropHint = getDropHintEl();
+      if (dropHint) {
+        dropHint.textContent = `${total} fotoğrafı aynı anda sayfaya bırakabilirsin`;
+      }
+    }
+
+    function resetDropZone() {
+      dropZone.innerHTML = `<strong>Fotoğrafları buraya sürükleyip bırak</strong><br><span id="dropHint" style="color:var(--muted); font-size:14px;"></span>`;
+      updateTexts();
     }
 
     function getSlotLabel(index) {
@@ -337,42 +350,58 @@
         const buffer = await file.arrayBuffer();
         const view = new DataView(buffer);
         if (view.getUint16(0, false) !== 0xFFD8) return null;
+
         let offset = 2;
         while (offset < view.byteLength) {
           const marker = view.getUint16(offset, false);
           offset += 2;
+
+          if (offset + 2 > view.byteLength) return null;
+
+          const size = view.getUint16(offset, false);
+          if (size < 2) return null;
+
           if (marker === 0xFFE1) {
-            const size = view.getUint16(offset, false);
             offset += 2;
+            if (offset + 6 > view.byteLength) return null;
+
             const exifHeader = new TextDecoder().decode(new Uint8Array(buffer, offset, 6));
             if (exifHeader !== 'Exif\0\0') return null;
+
             const tiff = offset + 6;
             const little = view.getUint16(tiff, false) === 0x4949;
             const get16 = (o) => view.getUint16(o, little);
             const get32 = (o) => view.getUint32(o, little);
+
             const ifd0 = tiff + get32(tiff + 4);
             const entries = get16(ifd0);
+
             for (let i = 0; i < entries; i++) {
               const entry = ifd0 + 2 + i * 12;
               const tag = get16(entry);
+
               if (tag === 0x8769) {
                 const exifIfd = tiff + get32(entry + 8);
                 const exifEntries = get16(exifIfd);
+
                 for (let j = 0; j < exifEntries; j++) {
                   const exifEntry = exifIfd + 2 + j * 12;
                   const exifTag = get16(exifEntry);
+
                   if (exifTag === 0x9003 || exifTag === 0x0132) {
                     const count = get32(exifEntry + 4);
                     const valueOffset = tiff + get32(exifEntry + 8);
-                    const bytes = new Uint8Array(buffer, valueOffset, count - 1);
-                    return new TextDecoder().decode(bytes).replace(/:/g, '-').replace(' ', ' ');
+                    if (count > 1 && valueOffset + count - 1 <= buffer.byteLength) {
+                      const bytes = new Uint8Array(buffer, valueOffset, count - 1);
+                      return new TextDecoder().decode(bytes).replace(/:/g, '-');
+                    }
                   }
                 }
               }
             }
             return null;
           }
-          const size = view.getUint16(offset, false);
+
           offset += size;
         }
       } catch (e) {
@@ -387,43 +416,86 @@
           reject(new Error('Eksik dosya'));
           return;
         }
-        const reader = new FileReader();
-        reader.onload = () => {
-          const img = new Image();
-          img.onload = () => resolve(img);
-          img.onerror = () => reject(new Error('Görsel yüklenemedi'));
-          img.src = reader.result;
+
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+
+        img.onload = async () => {
+          try {
+            if (typeof img.decode === 'function') {
+              await img.decode().catch(() => {});
+            }
+            resolve({ img, url });
+          } catch (err) {
+            URL.revokeObjectURL(url);
+            reject(err);
+          }
         };
-        reader.onerror = () => reject(new Error('Dosya okunamadı'));
-        reader.readAsDataURL(file);
+
+        img.onerror = () => {
+          URL.revokeObjectURL(url);
+          reject(new Error(`Görsel yüklenemedi: ${file.name}`));
+        };
+
+        img.src = url;
       });
     }
 
+    function computeSafeCanvasSize(rows, cols, targetWidth) {
+      const cellWidth = targetWidth;
+      const cellHeight = Math.round(targetWidth * 0.75);
+      const canvasWidth = cols * cellWidth + (cols + 1) * config.padding;
+      const canvasHeight = rows * cellHeight + (rows + 1) * config.padding + config.titleSpace;
+      const area = canvasWidth * canvasHeight;
+
+      if (canvasWidth > config.maxCanvasSide || canvasHeight > config.maxCanvasSide || area > config.maxCanvasArea) {
+        throw new Error(
+          `Çıktı boyutu çok büyük (${canvasWidth}x${canvasHeight}). Daha küçük fotoğraf genişliği, daha az satır/sütun seç.`
+        );
+      }
+
+      return { cellWidth, cellHeight, canvasWidth, canvasHeight };
+    }
+
+    function getSafeCrop(img, crop) {
+      const defaultCrop = { zoom: 1, x: 0.5, y: 0.5 };
+
+      if (!crop || !isFinite(crop.zoom) || !isFinite(crop.x) || !isFinite(crop.y)) {
+        return defaultCrop;
+      }
+
+      const zoom = Math.max(1, Math.min(4, Number(crop.zoom) || 1));
+      const x = Math.max(0, Math.min(1, Number(crop.x)));
+      const y = Math.max(0, Math.min(1, Number(crop.y)));
+
+      const sw = Math.max(1, img.width / zoom);
+      const sh = Math.max(1, img.height / zoom);
+
+      const sx = Math.max(0, Math.min(img.width - sw, x * (img.width - sw)));
+      const sy = Math.max(0, Math.min(img.height - sh, y * (img.height - sh)));
+
+      return { zoom, x, y, sx, sy, sw, sh };
+    }
+
     function drawRoundedImage(ctx, img, x, y, w, h, radius, crop = null) {
+      const r = Math.max(0, Math.min(radius, Math.min(w, h) / 2));
+
       ctx.save();
       ctx.beginPath();
-      ctx.moveTo(x + radius, y);
-      ctx.lineTo(x + w - radius, y);
-      ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
-      ctx.lineTo(x + w, y + h - radius);
-      ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
-      ctx.lineTo(x + radius, y + h);
-      ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
-      ctx.lineTo(x, y + radius);
-      ctx.quadraticCurveTo(x, y, x + radius, y);
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
       ctx.closePath();
       ctx.clip();
 
-      if (!crop) {
-        ctx.drawImage(img, x, y, w, h);
-      } else {
-        const scale = crop.zoom;
-        const sw = img.width / scale;
-        const sh = img.height / scale;
-        const sx = Math.max(0, Math.min(img.width - sw, crop.x * (img.width - sw)));
-        const sy = Math.max(0, Math.min(img.height - sh, crop.y * (img.height - sh)));
-        ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
-      }
+      const safeCrop = getSafeCrop(img, crop);
+      ctx.drawImage(img, safeCrop.sx, safeCrop.sy, safeCrop.sw, safeCrop.sh, x, y, w, h);
 
       ctx.restore();
     }
@@ -454,18 +526,36 @@
         imgCanvas.style.background = '#f3f4f6';
 
         const pctx = imgCanvas.getContext('2d');
+        const previewUrl = URL.createObjectURL(file);
         const previewImg = new Image();
-        previewImg.onload = () => {
-          const crop = cropStates[index] || { zoom: 1, x: 0.5, y: 0.5 };
-          const scale = crop.zoom;
-          const sw = previewImg.width / scale;
-          const sh = previewImg.height / scale;
-          const sx = Math.max(0, Math.min(previewImg.width - sw, crop.x * (previewImg.width - sw)));
-          const sy = Math.max(0, Math.min(previewImg.height - sh, crop.y * (previewImg.height - sh)));
-          pctx.clearRect(0, 0, imgCanvas.width, imgCanvas.height);
-          pctx.drawImage(previewImg, sx, sy, sw, sh, 0, 0, imgCanvas.width, imgCanvas.height);
+
+        previewImg.onload = async () => {
+          try {
+            if (typeof previewImg.decode === 'function') {
+              await previewImg.decode().catch(() => {});
+            }
+
+            const crop = getSafeCrop(previewImg, cropStates[index]);
+            pctx.clearRect(0, 0, imgCanvas.width, imgCanvas.height);
+            pctx.drawImage(previewImg, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, imgCanvas.width, imgCanvas.height);
+          } finally {
+            URL.revokeObjectURL(previewUrl);
+          }
         };
-        previewImg.src = URL.createObjectURL(file);
+
+        previewImg.onerror = () => {
+          URL.revokeObjectURL(previewUrl);
+          pctx.clearRect(0, 0, imgCanvas.width, imgCanvas.height);
+          pctx.fillStyle = '#e5e7eb';
+          pctx.fillRect(0, 0, imgCanvas.width, imgCanvas.height);
+          pctx.fillStyle = '#6b7280';
+          pctx.font = '16px Arial';
+          pctx.textAlign = 'center';
+          pctx.textBaseline = 'middle';
+          pctx.fillText('Önizleme yüklenemedi', imgCanvas.width / 2, imgCanvas.height / 2);
+        };
+
+        previewImg.src = previewUrl;
 
         const name = document.createElement('div');
         name.className = 'thumbName';
@@ -503,14 +593,18 @@
         card.addEventListener('drop', (e) => {
           e.preventDefault();
           card.style.background = '#fff';
+
           if (dragIndex === null || dragIndex === index) return;
 
           const moved = droppedFiles.splice(dragIndex, 1)[0];
           const movedCrop = cropStates.splice(dragIndex, 1)[0];
+
           droppedFiles.splice(index, 0, moved);
           cropStates.splice(index, 0, movedCrop);
 
           if (selectedIndex === dragIndex) selectedIndex = index;
+          else if (selectedIndex === index) selectedIndex = dragIndex;
+
           dragIndex = null;
           renderThumbs();
           syncCropControls();
@@ -538,14 +632,8 @@
       ectx.fillStyle = '#f3f4f6';
       ectx.fillRect(0, 0, editorCanvas.width, editorCanvas.height);
 
-      const crop = tempCropState;
-      const scale = crop.zoom;
-      const sw = editorImage.width / scale;
-      const sh = editorImage.height / scale;
-      const sx = Math.max(0, Math.min(editorImage.width - sw, crop.x * (editorImage.width - sw)));
-      const sy = Math.max(0, Math.min(editorImage.height - sh, crop.y * (editorImage.height - sh)));
-
-      ectx.drawImage(editorImage, sx, sy, sw, sh, 0, 0, editorCanvas.width, editorCanvas.height);
+      const crop = getSafeCrop(editorImage, tempCropState);
+      ectx.drawImage(editorImage, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, editorCanvas.width, editorCanvas.height);
 
       ectx.strokeStyle = 'rgba(37,99,235,0.9)';
       ectx.lineWidth = 3;
@@ -564,13 +652,27 @@
       label.textContent = getSlotLabel(selectedIndex);
 
       const file = droppedFiles[selectedIndex];
+      const url = URL.createObjectURL(file);
       const img = new Image();
-      img.onload = () => {
-        editorImage = img;
-        renderEditor();
-      };
-      img.src = URL.createObjectURL(file);
 
+      img.onload = async () => {
+        try {
+          if (typeof img.decode === 'function') {
+            await img.decode().catch(() => {});
+          }
+          editorImage = img;
+          renderEditor();
+        } finally {
+          URL.revokeObjectURL(url);
+        }
+      };
+
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        alert('Düzenleyici için görsel yüklenemedi.');
+      };
+
+      img.src = url;
       modal.style.display = 'flex';
     }
 
@@ -589,49 +691,56 @@
         return;
       }
 
+      let loadedImages = [];
+
       try {
         config.targetWidth = Number(targetWidthSelect.value || 900);
 
-        const images = await Promise.all(droppedFiles.map(loadImageFromFile));
-        const cellWidth = config.targetWidth;
-        const cellHeight = Math.round(config.targetWidth * 0.75);
+        const size = computeSafeCanvasSize(rows, cols, config.targetWidth);
 
-        const canvasWidth = cols * cellWidth + (cols + 1) * config.padding;
-        const canvasHeight = rows * cellHeight + (rows + 1) * config.padding + config.titleSpace;
+        loadedImages = await Promise.all(droppedFiles.map(loadImageFromFile));
 
-        canvas.width = canvasWidth;
-        canvas.height = canvasHeight;
+        canvas.width = size.canvasWidth;
+        canvas.height = size.canvasHeight;
 
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = config.background;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         const radius = Math.max(0, Number(cornerRadiusInput.value) || 0);
 
-        images.forEach((img, index) => {
+        loadedImages.forEach(({ img }, index) => {
           const row = Math.floor(index / cols);
           const col = index % cols;
 
-          const x = config.padding + col * (cellWidth + config.padding);
-          const y = config.titleSpace + config.padding + row * (cellHeight + config.padding);
+          const x = config.padding + col * (size.cellWidth + config.padding);
+          const y = config.titleSpace + config.padding + row * (size.cellHeight + config.padding);
 
-          drawRoundedImage(ctx, img, x, y, cellWidth, cellHeight, radius, cropStates[index]);
+          drawRoundedImage(ctx, img, x, y, size.cellWidth, size.cellHeight, radius, cropStates[index]);
         });
 
         let title = titleInput.value.trim() || 'Başlıksız';
         if (autoHeadlineSelect.value === 'on' && droppedFiles[0]) {
           const exifDate = await getExifDate(droppedFiles[0]);
-          if (exifDate) title = `${title} - ${exifDate}`;
+          if (exifDate) {
+            title = `${title} - ${exifDate}`;
+          }
         }
 
         ctx.fillStyle = '#000000';
         ctx.font = `${config.titleFontSize}px Calibri, Carlito, Arial, sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
+
         const titleY = config.padding + Math.max(0, (config.titleBandHeight - config.titleFontSize) / 2);
-        ctx.fillText(title, canvas.width / 2, titleY);
+        const maxTextWidth = canvas.width - config.padding * 2;
+        ctx.fillText(title, canvas.width / 2, titleY, maxTextWidth);
+
       } catch (error) {
         console.error(error);
-        alert('Kolaj oluşturulurken bir hata oluştu.');
+        alert('Kolaj oluşturulurken bir hata oluştu: ' + error.message);
+      } finally {
+        loadedImages.forEach(({ url }) => URL.revokeObjectURL(url));
       }
     }
 
@@ -685,28 +794,25 @@
       syncCropControls();
     });
 
-    rowsInput.addEventListener('input', () => {
-      updateTexts();
+    function resetLayoutState() {
       droppedFiles = [];
       cropStates = [];
       selectedIndex = null;
       thumbGrid.innerHTML = '';
       syncCropControls();
-      dropZone.innerHTML = `<strong>Fotoğrafları buraya sürükleyip bırak</strong><br><span id="dropHint" style="color:var(--muted); font-size:14px;"></span>`;
-      window.dropHint = document.getElementById('dropHint');
+      resetDropZone();
+      canvas.width = 0;
+      canvas.height = 0;
+    }
+
+    rowsInput.addEventListener('input', () => {
       updateTexts();
+      resetLayoutState();
     });
 
     colsInput.addEventListener('input', () => {
       updateTexts();
-      droppedFiles = [];
-      cropStates = [];
-      selectedIndex = null;
-      thumbGrid.innerHTML = '';
-      syncCropControls();
-      dropZone.innerHTML = `<strong>Fotoğrafları buraya sürükleyip bırak</strong><br><span id="dropHint" style="color:var(--muted); font-size:14px;"></span>`;
-      window.dropHint = document.getElementById('dropHint');
-      updateTexts();
+      resetLayoutState();
     });
 
     generateBtn.addEventListener('click', generateCollage);
@@ -717,7 +823,13 @@
         alert('Önce kolajı oluşturun.');
         return;
       }
+
       const pdfWindow = window.open('', '_blank');
+      if (!pdfWindow) {
+        alert('Yeni pencere açılamadı. Tarayıcı popup engelliyor olabilir.');
+        return;
+      }
+
       const imgData = canvas.toDataURL('image/png');
       pdfWindow.document.write(`<!DOCTYPE html><html><head><title>PDF</title><style>html,body{margin:0;padding:0}img{width:100%;display:block}</style></head><body><img src="${imgData}"></body></html>`);
       pdfWindow.document.close();
@@ -763,11 +875,13 @@
 
     document.addEventListener('mousemove', (e) => {
       if (!editorDrag || !tempCropState) return;
+
       const sensitivity = 0.0015 / Math.max(1, tempCropState.zoom * 0.7);
       tempCropState.x = Math.max(0, Math.min(1, tempCropState.x - (e.clientX - editorDrag.startX) * sensitivity));
       tempCropState.y = Math.max(0, Math.min(1, tempCropState.y - (e.clientY - editorDrag.startY) * sensitivity));
       editorDrag.startX = e.clientX;
       editorDrag.startY = e.clientY;
+
       renderEditor();
     });
 
@@ -778,6 +892,7 @@
     editorCanvas.addEventListener('wheel', (e) => {
       e.preventDefault();
       if (!tempCropState) return;
+
       const nextZoom = Math.max(1, Math.min(4, tempCropState.zoom + (e.deltaY < 0 ? 0.08 : -0.08)));
       tempCropState.zoom = Number(nextZoom.toFixed(2));
       document.getElementById('zoomRange').value = tempCropState.zoom;
