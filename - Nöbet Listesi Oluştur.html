@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gelişmiş Nöbet Simülatörü</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #121212; color: #e0e0e0; margin: 0; padding: 80px 20px 20px 20px; }
+    
+    .container { max-width: 1460px; margin: auto; display: grid; grid-template-columns: 420px 1fr; gap: 24px; }
+    
+    .card { background: #1e1e1e; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+    
+    h2 {
+      margin-top: 0; color: #ecf1ff; font-size: 1.15rem; font-weight: 600; letter-spacing: 0.5px;
+      margin-bottom: 22px; display: flex; align-items: center;
+    }
+
+    .form-group { margin-bottom: 15px; }
+    label { display: block; font-size: 0.9rem; color: #aaa; margin-bottom: 5px; }
+    input, textarea { width: 100%; padding: 10px; background: #2a2a2a; border: 1px solid #444; color: white; border-radius: 6px; box-sizing: border-box; font-family: inherit; font-size: 0.95rem; }
+    input:focus, textarea:focus { outline: none; border-color: #7c9cff; }
+    textarea { resize: vertical; min-height: 100px; }
+
+    .custom-datepicker { position: relative; width: 100%; user-select: none; box-sizing: border-box; }
+    .datepicker-trigger {
+      width: 100%; background: #2a2a2a; border: 1px solid #444; color: white; 
+      padding: 10px 12px; border-radius: 6px; font-size: 0.95rem; text-align: left;
+      display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: 0.2s;
+      box-sizing: border-box; 
+    }
+    .datepicker-trigger:hover { border-color: #666; }
+    .datepicker-trigger.active { border-color: #7c9cff; box-shadow: 0 0 0 2px rgba(124,156,255,0.2); }
+    
+    .datepicker-popover {
+      position: absolute; top: 100%; left: 0; width: 100%; background: #1e1e1e;
+      border: 1px solid #444; border-radius: 8px; margin-top: 6px; z-index: 50;
+      padding: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); box-sizing: border-box;
+      display: none; opacity: 0; transform: translateY(-5px); transition: all 0.2s ease;
+    }
+    .datepicker-popover.open { display: block; opacity: 1; transform: translateY(0); }
+    
+    .datepicker-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 12px; color: #ecf1ff; font-weight: 600; font-size: 1.05rem;
+    }
+    .datepicker-header button {
+      background: transparent; color: #aaa; border: none; font-size: 1.2rem;
+      cursor: pointer; padding: 2px 10px; width: auto; margin: 0;
+    }
+    .datepicker-header button:hover { color: #fff; background: rgba(255,255,255,0.05); }
+    
+    .datepicker-months { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .datepicker-month {
+      background: rgba(255,255,255,0.03); border: 1px solid transparent; color: #d1d5db;
+      padding: 8px 0; border-radius: 6px; cursor: pointer; font-size: 0.9rem; text-align: center; transition: 0.15s;
+    }
+    .datepicker-month:hover { background: rgba(255,255,255,0.08); }
+    .datepicker-month.selected { background: #7c9cff; color: #121212; font-weight: bold; border-color: #7c9cff; }
+
+    button { background: #7c9cff; color: #121212; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; transition: 0.2s; box-sizing: border-box;}
+    button:hover { background: #5e83ff; }
+    button.btn-secondary { background: #444; color: white; margin-top: 5px; }
+    button.btn-secondary:hover { background: #555; }
+
+    .shift-info-panel {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: rgba(24, 24, 27, 0.95);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(124, 156, 255, 0.2);
+      padding: 12px 20px;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      white-space: nowrap;
+      overflow-x: auto; 
+    }
+    .shift-info-panel::-webkit-scrollbar { height: 4px; }
+    .shift-info-panel::-webkit-scrollbar-thumb { background: rgba(124, 156, 255, 0.5); border-radius: 4px; }
+    
+    .staff-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; padding-right: 5px; }
+    .staff-item { background: #2a2a2a; padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #333; box-sizing: border-box; gap: 10px; }
+    
+    .staff-info { flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+    .staff-name { font-weight: 600; font-size: 0.95rem; word-wrap: break-word; }
+    .staff-prefs-summary { font-size: 0.75rem; display: flex; flex-direction: column; gap: 3px; line-height: 1.3; word-wrap: break-word; white-space: normal; }
+    
+    .staff-actions { display: flex; gap: 6px; flex-shrink: 0; align-items: center; }
+    .staff-actions button { width: auto; padding: 6px 10px; font-size: 0.8rem; margin: 0; }
+    .btn-pref { background: #fbbf24; color: #451a03; }
+    .btn-pref:hover { background: #f59e0b; }
+    .btn-del { background: #ef4444; color: white; }
+    .btn-del:hover { background: #dc2626; }
+    
+    .btn-export {
+      background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3);
+      padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;
+      width: auto; margin: 0; transition: 0.2s;
+    }
+    .btn-export:hover { background: rgba(16, 185, 129, 0.2); border-color: #10b981; }
+    
+    .target-input {
+      width: 60px; 
+      padding: 6px 8px; 
+      background: rgba(255, 255, 255, 0.05); 
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #ecf1ff; 
+      border-radius: 6px; 
+      font-size: 0.9rem; 
+      font-weight: 600;
+      text-align: center; 
+      margin-right: 8px; 
+      transition: all 0.2s ease; 
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
+      -moz-appearance: textfield; 
+    }
+    .target-input:hover { 
+      background: rgba(255, 255, 255, 0.08); 
+      border-color: rgba(124, 156, 255, 0.4); 
+    }
+    .target-input:focus { 
+      background: rgba(124, 156, 255, 0.1); 
+      border-color: #7c9cff; 
+      outline: none; 
+      box-shadow: 0 0 0 2px rgba(124, 156, 255, 0.2); 
+    }
+    .target-input::-webkit-outer-spin-button,
+    .target-input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+    .stat-box { background: rgba(255,255,255,0.02); border: 1px solid #444; padding: 5px 12px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; box-sizing: border-box; }
+    .stat-box span { color: #d1d5db; font-size: 0.85rem; margin: 0; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .stat-box strong { font-size: 0.85rem; color: #7c9cff; background: rgba(124,156,255,0.15); padding: 2px 8px; border-radius: 4px; }
+
+    .table-container { overflow-x: auto; border-radius: 8px; border: 1px solid #444; background: #1e1e1e; }
+    .excel-table { width: 100%; border-collapse: collapse; text-align: center; font-size: 0.95rem; min-width: 700px; }
+    .excel-table th, .excel-table td { border: 1px solid #444; padding: 12px 10px; }
+    .excel-table th { background: #2a2a2a; color: #e0e0e0; font-weight: bold; letter-spacing: 0.5px; }
+    .excel-table td { color: #d1d5db; }
+    .excel-table tr.weekend { background: rgba(251, 191, 36, 0.08); }
+    .excel-table tr.weekend td:nth-child(2) { color: #fbbf24; font-weight: 600; }
+    .excel-table td.error { color: #ef4444; font-weight: bold; background: rgba(239,68,68,0.1); }
+
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 100; backdrop-filter: blur(4px); }
+    .modal { background: #1e1e1e; padding: 24px; border-radius: 12px; border: 1px solid #444; width: 90%; max-width: 500px; box-sizing: border-box; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+    .close-btn { background: transparent; color: #aaa; font-size: 1.5rem; width: auto; padding: 0; margin: 0; line-height: 1; border: none; }
+    .close-btn:hover { color: white; background: transparent; }
+    .legend { display: flex; gap: 15px; font-size: 0.85rem; margin-bottom: 15px; color: #aaa; justify-content: center; }
+    .legend span { display: flex; align-items: center; gap: 5px; }
+    .legend-box { width: 14px; height: 14px; border-radius: 4px; border: 1px solid #555; }
+    .days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+    .day-btn { background: #2a2a2a; border: 1px solid #444; color: white; padding: 10px 0; border-radius: 6px; font-weight: bold; cursor: pointer; user-select: none; transition: 0.1s; text-align: center; box-sizing: border-box; }
+    .day-btn.state-1 { background: #10b981; color: white; border-color: #059669; } 
+    .day-btn.state-2 { background: #ef4444; color: white; border-color: #b91c1c; } 
+    
+    @media (max-width: 900px) { .container { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+
+<div id="shiftInfoUI" class="shift-info-panel">
+  </div>
+
+<div class="container">
+  <div class="card" style="align-self: start;">
+    <h2>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c9cff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 10px;"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+      PLAN AYARLARI
+    </h2>
+    
+    <div class="form-group">
+      <label>Planlanacak Ay</label>
+      <div class="custom-datepicker" id="datePicker">
+        <div class="datepicker-trigger" id="dateTrigger" onclick="toggleDatePicker()">
+          <span id="dateTriggerText">Nisan 2026</span>
+          <span style="font-size: 0.8rem; color: #aaa;">▼</span>
+        </div>
+        <div class="datepicker-popover" id="datePopover">
+          <div class="datepicker-header">
+            <button type="button" onclick="changePickerYear(-1)">&#10094;</button>
+            <span id="pickerYearLabel">2026</span>
+            <button type="button" onclick="changePickerYear(1)">&#10095;</button>
+          </div>
+          <div class="datepicker-months" id="pickerMonthsGrid"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Günlük Nöbetçi Sayısı</label>
+      <input type="number" id="dailyInput" value="3" min="1" max="10" oninput="updateShiftInfo()">
+    </div>
+
+    <hr style="border-color: #333; margin: 25px 0;">
+
+    <h2>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c9cff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 10px;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+      PERSONEL YÖNETİMİ
+    </h2>
+
+    <div class="form-group">
+      <label>Toplu Personel Ekle (Virgül veya alt alta)</label>
+      <textarea id="bulkStaffInput" placeholder="İsimleri buraya alt alta veya virgülle ayırarak yazabilirsiniz..."></textarea>
+      <button type="button" class="btn-secondary" onclick="addBulkStaff()">Ekle</button>
+    </div>
+
+    <div class="staff-list" id="staffListUI">
+      <div style="color:#aaa; font-size:0.85rem; padding:10px 0;">Personel listesi boş.</div>
+    </div>
+
+    <button type="button" onclick="generatePlan()" style="margin-top: 25px; padding: 15px; font-size: 1.1rem;">Planı Oluştur</button>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 24px;">
+    <div class="card">
+      <h2>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c9cff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 10px;"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+        NÖBET DAĞILIM ÖZETİ
+      </h2>
+      <div id="statsUI" class="stats-grid">
+        <div style="color:#aaa; font-size:0.9rem;">Plan oluşturulduğunda istatistikler burada görünecek.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px;">
+        <h2 id="calendarTitle" style="margin-bottom: 0;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c9cff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 10px;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+          OLUŞAN NÖBET TAKVİMİ
+        </h2>
+        <button type="button" class="btn-export" onclick="exportToExcel()" title="Tabloyu Excel Olarak İndir">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          EXCEL
+        </button>
+      </div>
+      <div id="calendarUI">
+        <div style="color:#aaa; font-size:0.9rem;">Henüz plan oluşturulmadı.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="prefModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modalTitle" style="margin:0; color:#ecf1ff; font-size:1.15rem; font-weight:600; display:flex; align-items:center;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c9cff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 10px;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+        PERSONEL TERCİHLERİ
+      </h3>
+      <button type="button" class="close-btn" onclick="closeModal()">×</button>
+    </div>
+    
+    <div class="legend">
+      <span><div class="legend-box" style="background:#2a2a2a;"></div> Fark Etmez</span>
+      <span><div class="legend-box" style="background:#10b981; border-color:#059669;"></div> İstiyor</span>
+      <span><div class="legend-box" style="background:#ef4444; border-color:#b91c1c;"></div> İstemiyor</span>
+    </div>
+    <div style="text-align:center; font-size:0.8rem; color:#aaa; margin-bottom:15px;">Günlerin üzerine tıklayarak durumu değiştirebilirsin.</div>
+
+    <div class="days-grid" id="daysGrid"></div>
+    
+    <button type="button" onclick="closeModal()" style="margin-top: 20px;">Kaydet ve Kapat</button>
+  </div>
+</div>
+
+<script>
+  let staffList = []; 
+  let currentEditingStaffId = null;
+  let totalDaysInMonth = 30;
+
+  const monthNames = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+  const dayNames = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
+
+  const today = new Date();
+  let selectedMonth = today.getMonth();
+  let selectedYear = today.getFullYear();
+  let popoverYear = selectedYear;
+
+  updateTriggerText();
+  updateMonthInfo(); 
+  renderPickerMonths();
+
+  function updateShiftInfo() {
+    const dailyNeed = parseInt(document.getElementById('dailyInput').value) || 0;
+    const totalShifts = totalDaysInMonth * dailyNeed;
+    
+    let assignedTargets = 0;
+    staffList.forEach(s => {
+      if (s.targetShifts && s.targetShifts > 0) {
+        assignedTargets += parseInt(s.targetShifts);
+      }
+    });
+    
+    const remainingShifts = totalShifts - assignedTargets;
+    const staffCount = staffList.length;
+    let fairText = "";
+    
+    if (staffCount > 0) {
+      const base = Math.floor(totalShifts / staffCount);
+      const remainder = totalShifts % staffCount;
+      if (remainder === 0) {
+        fairText = `<b style="color:#fff;">${totalShifts}</b> nöbet, <b style="color:#fff;">${staffCount}</b> personele kişi başı tam <b style="color:#fff;">${base}</b> nöbet olarak dağıtılabilir.`;
+      } else {
+        fairText = `<b style="color:#fff;">${totalShifts}</b> nöbet, <b style="color:#fff;">${staffCount}</b> personele dağıtıldığında; <b style="color:#fff;">${staffCount - remainder}</b> kişiye <b style="color:#fff;">${base}</b> nöbet, <b style="color:#fff;">${remainder}</b> kişiye <b style="color:#fff;">${base + 1}</b> nöbet düşmektedir.`;
+      }
+    } else {
+      fairText = "Personel eklendiğinde adil dağılım önerisi burada görünecektir.";
+    }
+
+    const remainderColor = remainingShifts < 0 ? '#ef4444' : (remainingShifts === 0 ? '#10b981' : '#7c9cff');
+
+    document.getElementById('shiftInfoUI').innerHTML = `
+      <span style="font-weight: 600; color: #ecf1ff; font-size: 0.95rem;">Toplam Nöbet Alanı: <span style="color:#fff;">${totalShifts}</span></span>
+      <span style="color:rgba(255,255,255,0.2);">|</span>
+      <span style="font-weight: 600; color: #ecf1ff; font-size: 0.95rem;">Kalan (Dağıtılabilir): <span style="color:${remainderColor};">${remainingShifts}</span></span>
+      <span style="color:rgba(255,255,255,0.2);">|</span>
+      <span style="color: #aaa; font-size: 0.9rem;">💡 <b style="color:#ecf1ff;">Dağılım Önerisi:</b> <span style="font-weight:normal;">${fairText}</span></span>
+    `;
+  }
+
+  function updateTargetShift(id, val) {
+    const staff = staffList.find(s => s.id === id);
+    if (staff) {
+      staff.targetShifts = val === '' ? null : parseInt(val);
+      updateShiftInfo();
+    }
+  }
+
+  function toggleDatePicker() {
+    const popover = document.getElementById('datePopover');
+    const trigger = document.getElementById('dateTrigger');
+    
+    if (popover.classList.contains('open')) {
+      popover.classList.remove('open');
+      trigger.classList.remove('active');
+    } else {
+      popoverYear = selectedYear; 
+      document.getElementById('pickerYearLabel').innerText = popoverYear;
+      renderPickerMonths();
+      popover.classList.add('open');
+      trigger.classList.add('active');
+    }
+  }
+
+  document.addEventListener('click', function(event) {
+    const datePicker = document.getElementById('datePicker');
+    if (!datePicker.contains(event.target)) {
+      document.getElementById('datePopover').classList.remove('open');
+      document.getElementById('dateTrigger').classList.remove('active');
+    }
+  });
+
+  function changePickerYear(delta) {
+    popoverYear += delta;
+    document.getElementById('pickerYearLabel').innerText = popoverYear;
+    renderPickerMonths(); 
+  }
+
+  function selectMonth(index) {
+    selectedMonth = index;
+    selectedYear = popoverYear; 
+    
+    updateTriggerText();
+    updateMonthInfo();
+    toggleDatePicker(); 
+  }
+
+  function renderPickerMonths() {
+    const grid = document.getElementById('pickerMonthsGrid');
+    grid.innerHTML = '';
+    
+    monthNames.forEach((month, index) => {
+      const btn = document.createElement('div');
+      btn.className = 'datepicker-month';
+      
+      if (index === selectedMonth && popoverYear === selectedYear) {
+        btn.classList.add('selected');
+      }
+      
+      btn.innerText = month.substring(0,3); 
+      btn.onclick = () => selectMonth(index);
+      grid.appendChild(btn);
+    });
+  }
+
+  function updateTriggerText() {
+    document.getElementById('dateTriggerText').innerText = `${monthNames[selectedMonth]} ${selectedYear}`;
+  }
+
+  function updateMonthInfo() {
+    totalDaysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+    updateShiftInfo(); 
+  }
+
+  function addBulkStaff() {
+    const input = document.getElementById('bulkStaffInput').value;
+    if (!input.trim()) return; 
+
+    const names = input.split(/[\r\n,;]+/).map(n => n.trim()).filter(n => n !== "");
+    let addedCount = 0;
+
+    names.forEach(name => {
+      const exists = staffList.find(s => s.name.toLocaleLowerCase('tr-TR') === name.toLocaleLowerCase('tr-TR'));
+      if (!exists) {
+        staffList.push({ id: 'p_' + Math.random().toString(36).substr(2, 9), name: name, prefs: {}, targetShifts: null });
+        addedCount++;
+      }
+    });
+
+    if (addedCount > 0) {
+      document.getElementById('bulkStaffInput').value = '';
+      renderStaff();
+    } else {
+      alert("Yazdığınız isim(ler) listede zaten ekli!");
+    }
+  }
+
+  function removeStaff(id) {
+    staffList = staffList.filter(s => s.id !== id);
+    renderStaff();
+  }
+
+  function renderStaff() {
+    const ui = document.getElementById('staffListUI');
+    if(staffList.length === 0) {
+        ui.innerHTML = '<div style="color:#aaa; font-size:0.85rem; padding:10px 0;">Personel listesi boş.</div>';
+        updateShiftInfo();
+        return;
+    }
+    
+    ui.innerHTML = staffList.map(staff => {
+      
+      let mustDays = [];
+      let blockedDays = [];
+      
+      for (let day in staff.prefs) {
+        if (staff.prefs[day] === 1) mustDays.push(day);
+        if (staff.prefs[day] === 2) blockedDays.push(day);
+      }
+      
+      mustDays.sort((a,b) => a - b);
+      blockedDays.sort((a,b) => a - b);
+      
+      let prefsHtml = '';
+      if (mustDays.length > 0 || blockedDays.length > 0) {
+        prefsHtml = '<div class="staff-prefs-summary">';
+        if (mustDays.length > 0) {
+          prefsHtml += `<span style="color:#10b981;">İstediği: ${mustDays.join(', ')}</span>`;
+        }
+        if (blockedDays.length > 0) {
+          prefsHtml += `<span style="color:#ef4444;">İstemediği: ${blockedDays.join(', ')}</span>`;
+        }
+        prefsHtml += '</div>';
+      }
+
+      return `
+        <div class="staff-item">
+          <div class="staff-info">
+            <span class="staff-name">${staff.name}</span>
+            ${prefsHtml}
+          </div>
+          <div class="staff-actions">
+            <input type="number" min="0" class="target-input" placeholder="Hedef" title="Bu kişiye yazılmasını istediğiniz maksimum nöbet sayısı" value="${staff.targetShifts || ''}" oninput="updateTargetShift('${staff.id}', this.value)">
+            <button type="button" class="btn-pref" onclick="openModal('${staff.id}')">Tercihler</button>
+            <button type="button" class="btn-del" onclick="removeStaff('${staff.id}')">Sil</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    updateShiftInfo(); 
+  }
+
+  function openModal(staffId) {
+    currentEditingStaffId = staffId;
+    const staff = staffList.find(s => s.id === staffId);
+    document.getElementById('modalTitle').innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c9cff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 10px;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>${staff.name.toLocaleUpperCase('tr-TR')} TERCİHLERİ`;
+    
+    const grid = document.getElementById('daysGrid');
+    grid.innerHTML = '';
+    
+    for(let i = 1; i <= totalDaysInMonth; i++) {
+        const state = staff.prefs[i] || 0;
+        const btn = document.createElement('div');
+        btn.className = `day-btn ${state === 1 ? 'state-1' : (state === 2 ? 'state-2' : '')}`;
+        btn.innerText = i;
+        btn.onclick = () => togglePref(i, btn);
+        grid.appendChild(btn);
+    }
+    
+    document.getElementById('prefModal').style.display = 'flex';
+  }
+
+  function togglePref(day, btnElement) {
+    const staff = staffList.find(s => s.id === currentEditingStaffId);
+    let currentState = staff.prefs[day] || 0;
+    
+    let newState = (currentState + 1) % 3;
+    
+    if (newState === 0) {
+        delete staff.prefs[day];
+        btnElement.className = 'day-btn';
+    } else if (newState === 1) {
+        staff.prefs[day] = 1;
+        btnElement.className = 'day-btn state-1';
+    } else if (newState === 2) {
+        staff.prefs[day] = 2;
+        btnElement.className = 'day-btn state-2';
+    }
+  }
+
+  function closeModal() {
+    document.getElementById('prefModal').style.display = 'none';
+    currentEditingStaffId = null;
+    renderStaff(); 
+  }
+
+  function generatePlan() {
+    const dailyNeed = parseInt(document.getElementById('dailyInput').value);
+    if (staffList.length < dailyNeed) return alert("Personel sayısı günlük nöbetçi ihtiyacından az olamaz!");
+
+    document.getElementById('calendarTitle').innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c9cff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 10px;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>${monthNames[selectedMonth].toLocaleUpperCase('tr-TR')} ${selectedYear} NÖBET TAKVİMİ`;
+
+    let stats = {};
+    staffList.forEach(s => stats[s.id] = 0);
+    
+    let calendarHtml = `
+      <div class="table-container">
+        <table class="excel-table" id="exportTable">
+          <thead>
+            <tr>
+              <th style="width: 100px;">Tarih</th>
+              <th style="width: 100px;">Gün</th>`;
+              
+    for(let i = 1; i <= dailyNeed; i++) {
+      calendarHtml += `<th>${String.fromCharCode(64 + i)}</th>`;
+    }
+    
+    calendarHtml += `
+            </tr>
+          </thead>
+          <tbody>`;
+    
+    for (let day = 1; day <= totalDaysInMonth; day++) {
+      let availableStaff = staffList.filter(s => s.prefs[day] !== 2);
+      
+      availableStaff.sort((a, b) => {
+        let aMust = a.prefs[day] === 1 ? 1 : 0;
+        let bMust = b.prefs[day] === 1 ? 1 : 0;
+        if (aMust !== bMust) return bMust - aMust; 
+
+        let aTarget = a.targetShifts || 0;
+        let bTarget = b.targetShifts || 0;
+        let aReached = (aTarget > 0 && stats[a.id] >= aTarget) ? 1 : 0;
+        let bReached = (bTarget > 0 && stats[b.id] >= bTarget) ? 1 : 0;
+        
+        if (aReached !== bReached) return aReached - bReached; 
+
+        return stats[a.id] - stats[b.id];
+      });
+      
+      const currentDate = new Date(selectedYear, selectedMonth, day);
+      const dayName = dayNames[currentDate.getDay()];
+      const isWeekend = (currentDate.getDay() === 0 || currentDate.getDay() === 6);
+      
+      const formattedDate = `${day}.${String(selectedMonth + 1).padStart(2, '0')}.${selectedYear}`;
+      const rowClass = isWeekend ? "weekend" : "";
+
+      calendarHtml += `<tr class="${rowClass}">
+          <td>${formattedDate}</td>
+          <td>${dayName}</td>`;
+          
+      for(let i = 0; i < dailyNeed; i++) {
+        if (availableStaff[i]) {
+            let chosen = availableStaff[i];
+            stats[chosen.id]++; 
+            calendarHtml += `<td>${chosen.name}</td>`;
+        } else {
+            calendarHtml += `<td class="error">EKSİK</td>`;
+        }
+      }
+
+      calendarHtml += `</tr>`;
+    }
+
+    calendarHtml += `
+          </tbody>
+        </table>
+      </div>`;
+
+    document.getElementById('calendarUI').innerHTML = calendarHtml;
+    
+    document.getElementById('statsUI').innerHTML = staffList.map(s => {
+      let targetInfo = s.targetShifts ? `<span style="font-size:0.8rem; color:#aaa; margin-left:4px;">/ ${s.targetShifts}</span>` : '';
+      let isOver = s.targetShifts && stats[s.id] > s.targetShifts ? 'color:#ef4444;' : '';
+      
+      return `
+      <div class="stat-box">
+        <span>${s.name}</span>
+        <div>
+          <strong style="${isOver}; font-size:0.95rem;">${stats[s.id]}</strong>${targetInfo}
+        </div>
+      </div>
+      `
+    }).join('');
+  }
+
+  // YENİ VE GELİŞTİRİLMİŞ EXCEL DIŞA AKTARMA FONKSİYONU
+  function exportToExcel() {
+    const table = document.getElementById('exportTable');
+    if (!table) {
+      alert("Lütfen önce bir plan oluşturun!");
+      return;
+    }
+
+    const uri = 'data:application/vnd.ms-excel;base64,';
+    
+    // Excel'in kendi içinde nasıl görüneceğini belirleyen CSS blokları eklendi
+    const template = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          table { border-collapse: collapse; font-family: 'Calibri', sans-serif; font-size: 11pt; }
+          th { background-color: #2F75B5; color: white; font-weight: bold; border: 1pt solid #1F4E79; padding: 10px; text-align: center; vertical-align: middle; height: 35px; }
+          td { border: 1pt solid #D9D9D9; padding: 5px; text-align: center; vertical-align: middle; height: 25px; color: #333333; }
+          .weekend td { background-color: #FFF2CC; }
+          .weekend td:nth-child(2) { color: #C65911; font-weight: bold; }
+          .error { background-color: #FFC7CE; color: #9C0006; font-weight: bold; }
+        </style>
+        </head>
+      <body>
+        <table>{table}</table>
+      </body>
+      </html>
+    `;
+    
+    const base64 = function(s) { return window.btoa(unescape(encodeURIComponent(s))) };
+    const format = function(s, c) { return s.replace(/{(\w+)}/g, function(m, p) { return c[p]; }) };
+
+    const ctx = { worksheet: 'Nöbet Listesi', table: table.innerHTML };
+    const link = document.createElement('a');
+    
+    link.href = uri + base64(format(template, ctx));
+    link.download = `Nobet_Takvimi_${monthNames[selectedMonth]}_${selectedYear}.xls`;
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+</script>
+
+</body>
+</html>
