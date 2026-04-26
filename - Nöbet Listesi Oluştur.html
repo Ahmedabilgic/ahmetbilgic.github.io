@@ -146,8 +146,24 @@
     .excel-table th, .excel-table td { border: 1px solid #444; padding: 12px 10px; }
     .excel-table th { background: #2a2a2a; color: #e0e0e0; font-weight: bold; letter-spacing: 0.5px; }
     .excel-table td { color: #d1d5db; }
-    .excel-table tr.weekend { background: rgba(251, 191, 36, 0.08); }
-    .excel-table tr.weekend td:nth-child(2) { color: #fbbf24; font-weight: 600; }
+    /* Hafta sonu satırının arka planını ve sınır çizgilerini belirginleştir */
+.excel-table tr.weekend { 
+  background: rgba(251, 191, 36, 0.15); 
+  border-top: 1px solid rgba(251, 191, 36, 0.3);
+  border-bottom: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+/* Hafta sonu satırındaki tüm personellerin isimlerini hafif parlak yap */
+.excel-table tr.weekend td { 
+  color: #fde68a; 
+}
+
+/* Tarih ve Gün ismini ekstra vurgula */
+.excel-table tr.weekend td:nth-child(1),
+.excel-table tr.weekend td:nth-child(2) { 
+  color: #fbbf24; 
+  font-weight: 800; 
+}
     .excel-table td.error { color: #ef4444; font-weight: bold; background: rgba(239,68,68,0.1); }
 
     .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 100; backdrop-filter: blur(4px); }
