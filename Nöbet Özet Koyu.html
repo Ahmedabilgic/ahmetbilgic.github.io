@@ -380,7 +380,7 @@
       button { width: 100%; }
       th, td { padding: 11px 10px; }
     }
-  
+
     .output-header {
       display:flex;
       justify-content:space-between;
@@ -541,7 +541,6 @@
       transform: rotate(0deg) scale(1);
     }
 
-
 </style>
 </head>
 <body>
@@ -578,8 +577,6 @@
         <h2>Veri Girişi</h2>
         <div class="mini-note">Tarih | Gün | MESAİ | A | B | C</div>
       </div>
-
-      
 
       <label class="field-label" for="excelFile">Dosya seç</label>
       <input id="excelFile" type="file" accept=".csv,.xlsx,.xls" />
@@ -627,9 +624,9 @@
       </div>
 
       <div style="display:flex;justify-content:space-between;align-items:center;">
-<div class="subtle-title">Metin Önizleme</div>
-<button id="copyPreviewTableBtn" class="copy-btn-top">Tablo Olarak Kopyala</button>
-</div>
+        <div class="subtle-title">Metin Önizleme</div>
+        <button id="copyPreviewTableBtn" class="copy-btn-top">Tablo Olarak Kopyala</button>
+      </div>
       <div id="textOutput" class="mono small"></div>
       <div id="wordCopyArea" class="sr-only-area"></div>
       <table id="plainCopyTable" class="sr-only-area"></table>
@@ -639,7 +636,6 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script>
     const sampleData = '';
-
 
     const themeToggle = document.getElementById('themeToggle');
     const THEME_KEY = 'nobet-ozeti-theme';
@@ -921,8 +917,6 @@
       }
     });
 
-    
-    
     async function copyTableOutput() {
       const rows = Array.from(document.querySelectorAll('#resultTable tr'));
       if (!rows.length) {
@@ -975,7 +969,7 @@
       setStatus('ok', 'Excel dosyası indirildi.');
     }
 
-async function copyWordOutput() {
+    async function copyWordOutput() {
       const bodyRows = Array.from(tbody.querySelectorAll('tr'));
       if (!bodyRows.length) {
         setStatus('error', 'Kopyalanacak çıktı yok. Önce özet oluşturun.');
@@ -1039,17 +1033,20 @@ async function copyWordOutput() {
       }
     }
 
-document.getElementById('generateBtn').addEventListener('click', generate);
+    document.getElementById('generateBtn').addEventListener('click', generate);
     document.getElementById('loadSampleBtn').addEventListener('click', () => {
       input.value = `Tarih\tGün\tMESAİ\tA\tB\tC\n`;
       clearStatus();
       setStatus('ok', 'Boş şablon yerleştirildi. Kendi verinizi yapıştırabilir veya CSV yükleyebilirsiniz.');
     });
-    document.getElementById('copyTableBtn').addEventListener('click', copyTableOutput);
+    
+    // BUTON GÜNCELLEMELERİ BURADA YAPILDI
+    document.getElementById('copyTableBtn').addEventListener('click', copyWordOutput);
     const topBtn = document.getElementById('copyTableBtnTop');
-    if(topBtn){ topBtn.addEventListener('click', copyTableOutput);}
+    if(topBtn){ topBtn.addEventListener('click', copyWordOutput);}
     const previewBtn = document.getElementById('copyPreviewTableBtn');
-    if(previewBtn){ previewBtn.addEventListener('click', copyTableOutput);}
+    if(previewBtn){ previewBtn.addEventListener('click', copyWordOutput);}
+    
     document.getElementById('copyWordBtn').addEventListener('click', copyWordOutput);
     document.getElementById('copyTextBtn').addEventListener('click', copyTextOutput);
     document.getElementById('downloadXlsxBtn').addEventListener('click', downloadXlsxOutput);
@@ -1057,4 +1054,3 @@ document.getElementById('generateBtn').addEventListener('click', generate);
   </script>
 </body>
 </html>
-
