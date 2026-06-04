@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Kan Grubu Uyumsuzluğu ve Doğrulama Tutanağı</title>
+    <style>
+        @page {
+            size: A4;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 11pt;
+            color: #000;
+            margin: 0 auto;
+            max-width: 190mm;
+            padding: 20px;
+            background: #fff;
+        }
+        h1 {
+            text-align: center;
+            font-size: 13pt;
+            font-weight: bold;
+            margin-top: 0;
+            margin-bottom: 30px;
+        }
+        .section-title {
+            font-size: 11pt;
+            font-weight: bold;
+            margin-top: 30px;
+            margin-bottom: 10px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+        table, th, td {
+            border: 1px solid #000;
+        }
+        td {
+            padding: 8px 10px;
+            vertical-align: middle;
+        }
+        .col-label {
+            font-weight: bold;
+            width: 26%;
+        }
+        
+        input[type="text"] {
+            font-family: Arial, sans-serif;
+            font-size: 11pt;
+            border: none;
+            border-bottom: 1px dotted #000;
+            background-color: transparent;
+            outline: none;
+        }
+        .full-width-input {
+            width: 100%;
+        }
+        .short-input {
+            width: 25px;
+            text-align: center;
+        }
+        .year-input {
+            width: 12px;
+            text-align: left;
+            padding: 0;
+            margin: 0;
+        }
+        
+        select {
+            font-family: Arial, sans-serif;
+            font-size: 11pt;
+            border: 1px solid #aaa;
+            padding: 4px;
+            border-radius: 3px;
+            outline: none;
+            width: 200px;
+            cursor: pointer;
+        }
+
+        p {
+            text-align: justify;
+            margin-bottom: 15px;
+            margin-top: 15px;
+            text-indent: 40px;
+            line-height: 1.5;
+        }
+
+        .signatures {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 60px;
+        }
+        .sig-block {
+            width: 28%;
+            display: flex;
+            flex-direction: column;
+        }
+        .sig-name-row {
+            display: flex;
+            align-items: baseline;
+            margin-bottom: 50px; 
+        }
+        .sig-line-bottom {
+            border-bottom: 1px dotted #000;
+            width: 100%;
+        }
+        .sig-text {
+            text-align: center;
+            margin-top: 5px;
+            font-size: 10pt;
+            font-weight: bold;
+        }
+
+        .print-button {
+            display: block;
+            margin: 50px auto;
+            padding: 10px 30px;
+            font-size: 12pt;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .print-button:hover {
+            background-color: #218838;
+        }
+
+        @media print {
+            @page { margin: 0; }
+            body { 
+                padding: 15mm 20mm; 
+                margin: 0; 
+                max-width: 100%; 
+            }
+            .print-button { display: none; }
+            
+            input[type="text"] { border-bottom: none !important; }
+            .sig-line-bottom { border-bottom: none !important; }
+            select {
+                -webkit-appearance: none;
+                -moz-appearance: none;
+                appearance: none;
+                border: none !important;
+                background: transparent;
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>KAN GRUBU UYUMSUZLUĞU VE DOĞRULAMA TUTANAĞI</h1>
+
+    <div class="section-title">1. HASTA VE PROTOKOL BİLGİLERİ</div>
+    
+    <table>
+        <tr>
+            <td class="col-label">Hasta Adı Soyadı:</td>
+            <td colspan="3"><input type="text" class="full-width-input"></td>
+        </tr>
+        <tr>
+            <td class="col-label">T.C. Kimlik No:</td>
+            <td style="width: 22%;"><input type="text" class="full-width-input" maxlength="11" oninput="this.value=this.value.replace(/[^0-9]/g,'');"></td>
+            <td class="col-label" style="width: 23%; padding-left: 10px; white-space: nowrap;">Kabul Tarihi / Saat:</td>
+            <td style="white-space: nowrap;">
+                <input type="text" class="short-input" maxlength="2" placeholder="GG" oninput="this.value=this.value.replace(/[^0-9]/g,''); if(this.value>31)this.value=31;"> / 
+                <input type="text" class="short-input" maxlength="2" placeholder="AA" oninput="this.value=this.value.replace(/[^0-9]/g,''); if(this.value>12)this.value=12;"> / 202<input type="text" class="year-input" maxlength="1" placeholder="Y" oninput="this.value=this.value.replace(/[^0-9]/g,'');">
+                &nbsp;&nbsp;
+                <input type="text" class="short-input" maxlength="2" placeholder="SS" oninput="this.value=this.value.replace(/[^0-9]/g,''); if(this.value>23)this.value=23;"> : <input type="text" class="short-input" maxlength="2" placeholder="DD" oninput="this.value=this.value.replace(/[^0-9]/g,''); if(this.value>59)this.value=59;">
+            </td>
+        </tr>
+        <tr>
+            <td class="col-label">Bulunduğu Servis</td>
+            <td colspan="3"><input type="text" class="full-width-input"></td>
+        </tr>
+    </table>
+
+    <div class="section-title">2. TESPİT VE LABORATUVAR SÜRECİ</div>
+    
+    <table>
+        <tr>
+            <td class="col-label" style="width: 40%;">Önceki Kayıtlardaki Kan Grubu:</td>
+            <td>
+                <select>
+                    <option value=""></option>
+                    <option value="A Rh(+) Pozitif">A Rh(+) Pozitif</option>
+                    <option value="A Rh(-) Negatif">A Rh(-) Negatif</option>
+                    <option value="B Rh(+) Pozitif">B Rh(+) Pozitif</option>
+                    <option value="B Rh(-) Negatif">B Rh(-) Negatif</option>
+                    <option value="AB Rh(+) Pozitif">AB Rh(+) Pozitif</option>
+                    <option value="AB Rh(-) Negatif">AB Rh(-) Negatif</option>
+                    <option value="0 Rh(+) Pozitif">0 Rh(+) Pozitif</option>
+                    <option value="0 Rh(-) Negatif">0 Rh(-) Negatif</option>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td class="col-label">Merkezimiz İlk Analiz Sonucu:</td>
+            <td>
+                <select>
+                    <option value=""></option>
+                    <option value="A Rh(+) Pozitif">A Rh(+) Pozitif</option>
+                    <option value="A Rh(-) Negatif">A Rh(-) Negatif</option>
+                    <option value="B Rh(+) Pozitif">B Rh(+) Pozitif</option>
+                    <option value="B Rh(-) Negatif">B Rh(-) Negatif</option>
+                    <option value="AB Rh(+) Pozitif">AB Rh(+) Pozitif</option>
+                    <option value="AB Rh(-) Negatif">AB Rh(-) Negatif</option>
+                    <option value="0 Rh(+) Pozitif">0 Rh(+) Pozitif</option>
+                    <option value="0 Rh(-) Negatif">0 Rh(-) Negatif</option>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td class="col-label">İkinci Bağımsız Numune Sonucu:</td>
+            <td>
+                <select>
+                    <option value=""></option>
+                    <option value="A Rh(+) Pozitif">A Rh(+) Pozitif</option>
+                    <option value="A Rh(-) Negatif">A Rh(-) Negatif</option>
+                    <option value="B Rh(+) Pozitif">B Rh(+) Pozitif</option>
+                    <option value="B Rh(-) Negatif">B Rh(-) Negatif</option>
+                    <option value="AB Rh(+) Pozitif">AB Rh(+) Pozitif</option>
+                    <option value="AB Rh(-) Negatif">AB Rh(-) Negatif</option>
+                    <option value="0 Rh(+) Pozitif">0 Rh(+) Pozitif</option>
+                    <option value="0 Rh(-) Negatif">0 Rh(-) Negatif</option>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td class="col-label">Onaylanan Kesin Kan Grubu:</td>
+            <td>
+                <select>
+                    <option value=""></option>
+                    <option value="A Rh(+) Pozitif">A Rh(+) Pozitif</option>
+                    <option value="A Rh(-) Negatif">A Rh(-) Negatif</option>
+                    <option value="B Rh(+) Pozitif">B Rh(+) Pozitif</option>
+                    <option value="B Rh(-) Negatif">B Rh(-) Negatif</option>
+                    <option value="AB Rh(+) Pozitif">AB Rh(+) Pozitif</option>
+                    <option value="AB Rh(-) Negatif">AB Rh(-) Negatif</option>
+                    <option value="0 Rh(+) Pozitif">0 Rh(+) Pozitif</option>
+                    <option value="0 Rh(-) Negatif">0 Rh(-) Negatif</option>
+                </select>
+            </td>
+        </tr>
+    </table>
+
+    <p>Yukarıda kimlik bilgileri ve protokol detayları belirtilen hastanın, dış merkez veya sisteme kayıtlı önceki sağlık verilerinde yer alan kan grubu ile Transfüzyon Merkezimizde yapılan ilk analizi arasında uyumsuzluk tespit edilmiştir.</p>
+    
+    <p>Hasta güvenliği standartları ve transfüzyon güvenliği protokolleri gereğince, olası bir ABO/Rh uyumsuzluğunun doğrulanması amacıyla hastadan tamamen bağımsız ikinci bir numune talep edilerek çalışma tekrarlanmıştır. Yapılan ikinci bağımsız analiz neticesinde, ilk test sonucu teyit edilmiş ve hastanın kesin kan grubu belirlenmiştir.</p>
+    
+    <p>Elde edilen doğrulama sonuçları doğrultusunda hastanın nihai kan grubu HBYS (Hastane Bilgi Yönetim Sistemi) üzerine işlenmiş olup, işbu tutanak sürecin eksiksiz kayıt altına alınması amacıyla <input type="text" class="short-input" maxlength="2" placeholder="GG" oninput="this.value=this.value.replace(/[^0-9]/g,''); if(this.value>31)this.value=31;"> / <input type="text" class="short-input" maxlength="2" placeholder="AA" oninput="this.value=this.value.replace(/[^0-9]/g,''); if(this.value>12)this.value=12;"> / 202<input type="text" class="year-input" maxlength="1" placeholder="Y" oninput="this.value=this.value.replace(/[^0-9]/g,'');"> tarihi, saat <input type="text" class="short-input" maxlength="2" placeholder="SS" oninput="this.value=this.value.replace(/[^0-9]/g,''); if(this.value>23)this.value=23;"> : <input type="text" class="short-input" maxlength="2" placeholder="DD" oninput="this.value=this.value.replace(/[^0-9]/g,''); if(this.value>59)this.value=59;"> itibarıyla düzenlenerek imza altına alınmıştır.</p>
+
+    <div class="signatures">
+        <div class="sig-block">
+            <div class="sig-name-row">
+                <input type="text" class="full-width-input" style="text-align: center;">
+            </div>
+            <div class="sig-line-bottom"></div>
+            <div class="sig-text">İmza</div>
+        </div>
+        <div class="sig-block">
+            <div class="sig-name-row">
+                <input type="text" class="full-width-input" style="text-align: center;">
+            </div>
+            <div class="sig-line-bottom"></div>
+            <div class="sig-text">İmza</div>
+        </div>
+        <div class="sig-block">
+            <div class="sig-name-row">
+                <input type="text" class="full-width-input" style="text-align: center;">
+            </div>
+            <div class="sig-line-bottom"></div>
+            <div class="sig-text">İmza</div>
+        </div>
+    </div>
+
+    <button class="print-button" onclick="window.print()">Yazdır</button>
+
+</body>
+</html>
