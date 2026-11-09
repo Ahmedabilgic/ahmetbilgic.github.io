@@ -1,0 +1,3342 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nöbet Listesi Hazırlama Sistemi</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Font: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Yerel .xlsx Oluşturucu (Excel uyarı penceresini engeller ve biçimlendirmeyi korur) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+  <script>
+    if (typeof XLSX === 'undefined') {
+      const fallbackScript = document.createElement('script');
+      fallbackScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+      document.head.appendChild(fallbackScript);
+    }
+  </script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            tealHeader: '#00897b',
+            tealHeaderDark: '#00796b',
+            tealLight: '#e0f2f1'
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Özel Yazdırma (Print) Stilleri */
+    @media print {
+      body {
+        background-color: white !important;
+        font-size: 11pt;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .print-only {
+        display: block !important;
+      }
+      .page-break {
+        page-break-before: always;
+      }
+      .shadow-sm, .shadow-md, .shadow-lg {
+        box-shadow: none !important;
+      }
+      table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+      }
+      th, td {
+        border: 1px solid #cbd5e1 !important;
+        padding: 6px 8px !important;
+      }
+    }
+
+    /* Minimalist input underline stili (Görseldeki gibi) */
+    .input-clean {
+      border: none;
+      border-bottom: 1.5px solid #d1d5db;
+      border-radius: 0;
+      padding: 0.35rem 0.1rem;
+      background: transparent;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+    .input-clean:focus {
+      border-bottom-color: #00897b;
+      box-shadow: 0 1px 0 0 #00897b;
+    }
+
+    /* Resmi Kurum Dikey Başlık Yazısı (Fotoğraftaki gibi) */
+    .vertical-title {
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
+      text-orientation: mixed;
+      letter-spacing: 0.08em;
+      white-space: nowrap;
+      text-align: center;
+      font-weight: 800;
+      font-size: 11px;
+    }
+
+    /* Çizelgedeki Nöbetçi Hücreleri (İsimleri Asla Kesmeyen Temiz Excel Stili) */
+    .roster-cell-select {
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      background: transparent;
+      border: 1px solid transparent;
+      text-align-last: center;
+      text-align: center;
+      width: 100%;
+      height: 100%;
+      padding: 6px 4px;
+      font-weight: 800;
+      font-size: 13px;
+      color: #000000;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all 0.15s ease;
+    }
+    .roster-cell-select:hover {
+      background-color: rgba(255, 255, 255, 0.9);
+      border-color: #00897b;
+      box-shadow: 0 0 0 1px #00897b;
+    }
+    .roster-cell-select:focus {
+      background-color: #ffffff;
+      border-color: #00897b;
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(0, 137, 123, 0.3);
+    }
+
+    /* Özelleştirilmiş Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen font-sans antialiased">
+
+  <!-- Toast Bildirim Konteyneri -->
+  <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- Ana Kapsayıcı -->
+  <div class="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
+
+    <!-- Üst Başlık & Adım Göstergesi (Görseldeki Tasarım) -->
+    <header class="bg-white rounded-t-xl border border-b-0 border-slate-200 px-6 py-4 flex items-center justify-between no-print shadow-xs">
+      <div class="flex items-center space-x-3">
+        <!-- 1 Nolu Giriş İkonu -->
+        <span class="bg-slate-900 text-white font-bold text-sm w-7 h-7 flex items-center justify-center rounded-sm shadow-xs">1</span>
+        <h1 class="text-lg font-bold text-slate-800 tracking-tight">Giriş ve Parametreler</h1>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+          Akıllı Nöbet Dağıtım Motoru Aktif
+        </span>
+      </div>
+    </header>
+
+    <!-- Form Parametreleri Kartı -->
+    <div class="bg-white border border-slate-200 p-6 shadow-sm rounded-b-xl mb-6 no-print">
+      
+      <!-- Tarih Seçim Yöntemi Geçiş Butonları (Ay/Yıl vs Özel Aralık) -->
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-5 pb-4 border-b border-slate-100">
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Tarih Seçim Yöntemi:</span>
+        </div>
+        <div class="inline-flex p-1 bg-slate-100 rounded-lg text-xs font-semibold">
+          <button type="button" id="btnModeMonthYear" class="px-3 py-1.5 rounded-md bg-white text-teal-800 shadow-xs transition flex items-center gap-1.5">
+            <svg class="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            🗓️ Ay ve Yıl Seçimi
+          </button>
+          <button type="button" id="btnModeDateRange" class="px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 transition flex items-center gap-1.5">
+            <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            📅 Özel Tarih Aralığı
+          </button>
+        </div>
+      </div>
+
+      <!-- 1. Satır Girişleri -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-6 mb-2 items-center">
+        
+        <!-- MOD 1: Ay ve Yıl Seçici (Varsayılan Aktif) -->
+        <div id="wrapperMonthYear" class="sm:col-span-2 lg:col-span-5 grid grid-cols-2 gap-4">
+          <div class="flex flex-col">
+            <label for="selectMonth" class="text-xs font-semibold text-slate-500 mb-1">Nöbet Ayı</label>
+            <select id="selectMonth" class="input-clean text-sm text-slate-800 font-semibold cursor-pointer">
+              <option value="0">Ocak</option>
+              <option value="1">Şubat</option>
+              <option value="2">Mart</option>
+              <option value="3">Nisan</option>
+              <option value="4">Mayıs</option>
+              <option value="5">Haziran</option>
+              <option value="6">Temmuz</option>
+              <option value="7">Ağustos</option>
+              <option value="8">Eylül</option>
+              <option value="9">Ekim</option>
+              <option value="10">Kasım</option>
+              <option value="11">Aralık</option>
+            </select>
+            <span class="text-[11px] text-teal-600 font-medium mt-1" id="monthDaysInfo">Ay hesaplanıyor...</span>
+          </div>
+
+          <div class="flex flex-col">
+            <label for="selectYear" class="text-xs font-semibold text-slate-500 mb-1">Yıl</label>
+            <select id="selectYear" class="input-clean text-sm text-slate-800 font-semibold cursor-pointer">
+              <!-- JS ile doldurulur -->
+            </select>
+            <span class="text-[11px] text-slate-400 mt-1">Seçilen ayın tamamı kapsanır</span>
+          </div>
+        </div>
+
+        <!-- MOD 2: Özel Başlangıç ve Bitiş Tarihi (Gizlenebilir) -->
+        <div id="wrapperDateRange" class="sm:col-span-2 lg:col-span-5 grid grid-cols-2 gap-4 hidden">
+          <!-- Başlangıç Tarihi -->
+          <div class="flex flex-col">
+            <label for="startDate" class="text-xs font-semibold text-slate-500 mb-1">Başlangıç Tarihi</label>
+            <input type="date" id="startDate" class="input-clean text-sm text-slate-800 font-medium cursor-pointer">
+          </div>
+
+          <!-- Bitiş Tarihi -->
+          <div class="flex flex-col">
+            <label for="endDate" class="text-xs font-semibold text-slate-500 mb-1">Bitiş Tarihi</label>
+            <input type="date" id="endDate" class="input-clean text-sm text-slate-800 font-medium cursor-pointer">
+          </div>
+        </div>
+
+        <!-- Kaçar Kişi? -->
+        <div class="sm:col-span-1 lg:col-span-2 flex flex-col">
+          <label for="peoplePerShift" class="text-xs font-semibold text-slate-500 mb-1">Kaçar kişi?</label>
+          <input type="number" id="peoplePerShift" min="1" max="10" value="3" class="input-clean text-sm text-slate-800 font-medium">
+          <span class="text-[11px] text-slate-400 mt-1">Günlük nöbetçi (A,B,C)</span>
+        </div>
+
+        <!-- Maksimum Boşluk (Gün) Parametresi -->
+        <div class="sm:col-span-1 lg:col-span-2 flex flex-col">
+          <label for="maxGapDays" class="text-xs font-semibold text-slate-500 mb-1">Maks. Boşluk</label>
+          <div class="flex items-center">
+            <input type="number" id="maxGapDays" min="1" max="15" value="4" class="input-clean text-sm text-slate-800 font-semibold w-full">
+            <span class="text-xs text-slate-400 font-medium ml-1">gün</span>
+          </div>
+          <span class="text-[11px] text-slate-400 mt-1">Nöbet arası azami aralık</span>
+        </div>
+
+        <!-- Hafta Sonu Ayrı Belirle Onayı (Sade ve Yan Yana) -->
+        <div class="sm:col-span-1 lg:col-span-3 flex items-center space-x-2.5 pt-2">
+          <input type="checkbox" id="separateWeekend" class="w-4 h-4 text-teal-600 bg-gray-100 border-gray-300 rounded focus:ring-teal-500 cursor-pointer">
+          <label for="separateWeekend" class="text-xs sm:text-sm font-semibold text-slate-700 cursor-pointer select-none">
+            Hafta Sonunu Ayrı Belirle
+          </label>
+        </div>
+
+      </div>
+
+      <!-- Resmi Kurum ve Birim Bilgileri (Resmi Çıktı Başlığı İçin) -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3 pt-3 border-t border-slate-100">
+        <div class="flex flex-col">
+          <label for="inputHospitalName" class="text-xs font-semibold text-slate-500 mb-1">Kurum / Hastane Adı</label>
+          <input 
+            type="text" 
+            id="inputHospitalName" 
+            value="MARDİN EĞİTİM VE ARAŞTIRMA HASTANESİ" 
+            class="input-clean text-xs font-bold text-slate-800 uppercase"
+            placeholder="Örn: ANKARA BİLKENT ŞEHİR HASTANESİ"
+          >
+        </div>
+        <div class="flex flex-col">
+          <label for="inputUnitName" class="text-xs font-semibold text-slate-500 mb-1">Birim / Servis Adı</label>
+          <input 
+            type="text" 
+            id="inputUnitName" 
+            value="TRANSFÜZYON MERKEZİ" 
+            class="input-clean text-xs font-bold text-slate-800 uppercase"
+            placeholder="Örn: TRANSFÜZYON MERKEZİ VEYA ACİL SERVİS"
+          >
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Personel Listesi ve Durum Paneli -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start no-print mb-8">
+
+      <!-- Sol Sütun (8 Kolon): Personel Yönetim Tablosu ve Kurallar -->
+      <div class="lg:col-span-8 flex flex-col gap-4">
+
+        <!-- Personel Yönetim Tablosu -->
+        <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+          
+          <!-- Yeşil Header (Görseldeki Özgün Teal Şerit) -->
+          <div class="bg-[#00897b] text-white px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center space-x-2">
+              <svg class="w-5 h-5 text-teal-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+              </svg>
+              <span class="font-bold tracking-wide text-sm uppercase">PERSONEL LİSTESİ</span>
+            </div>
+
+            <!-- Personel Ekle Input ve Buton (Görseldeki Entegre Bar) -->
+            <form id="addStaffForm" class="flex items-center bg-white rounded-md overflow-hidden p-0.5 shadow-inner">
+              <input 
+                type="text" 
+                id="staffNameInput" 
+                placeholder="Personel Ekle" 
+                class="px-3 py-1 text-sm text-slate-800 placeholder-slate-400 outline-none w-40 sm:w-56"
+                autocomplete="off"
+              >
+              <button 
+                type="submit" 
+                title="Personel Ekle" 
+                class="bg-transparent hover:bg-teal-50 text-[#00897b] p-1.5 transition rounded"
+              >
+                <!-- Gönder / Ekle Oku -->
+                <svg class="w-4 h-4 fill-current rotate-45 transform" viewBox="0 0 20 20">
+                  <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"/>
+                </svg>
+              </button>
+              <div class="h-4 w-px bg-slate-200 mx-1"></div>
+              <button 
+                type="button" 
+                id="btnBulkSample" 
+                title="Varsayılan Personel Kadrosunu Geri Yükle" 
+                class="text-slate-400 hover:text-teal-700 hover:bg-teal-50 p-1.5 transition rounded text-xs flex items-center justify-center"
+              >
+                <!-- Varsayılan Kadroyu Geri Yükleme / Yenileme İkonu -->
+                <svg class="w-4 h-4 text-slate-500 hover:text-teal-700 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
+              </button>
+              <button 
+                type="button" 
+                id="btnSortStaffAZ" 
+                title="Personel Listesini Alfabetik (A-Z) Sırala" 
+                class="text-teal-700 bg-teal-50 hover:bg-teal-100 px-2 py-0.5 rounded text-xs font-bold transition flex items-center gap-0.5 border border-teal-200"
+              >
+                A-Z
+              </button>
+            </form>
+          </div>
+
+          <!-- Personel Tablosu (Kaydırmasız, tam boy doğal liste görünümü) -->
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse" id="staffTable">
+              <thead>
+                <tr class="bg-[#00897b]/90 text-white text-xs font-semibold tracking-wider">
+                  <th class="py-2.5 px-4">İsim</th>
+                  <th class="py-2.5 px-3 text-center target-col-total">Kaç Nöbet?</th>
+                  <th class="py-2.5 px-3 text-center target-col-split hidden">Hafta İçi</th>
+                  <th class="py-2.5 px-3 text-center target-col-split hidden">Hafta Sonu</th>
+                  <th class="py-2.5 px-3 text-center">Mazeret / İzin</th>
+                  <th class="py-2.5 px-4 text-right">Sil</th>
+                </tr>
+              </thead>
+              <tbody id="staffTableBody" class="divide-y divide-slate-100 text-sm">
+                <!-- Dinamik olarak JS ile doldurulur -->
+              </tbody>
+            </table>
+
+            <!-- Boş Liste Uyarısı -->
+            <div id="emptyStaffMsg" class="hidden text-center py-8 text-slate-400">
+              <svg class="w-12 h-12 mx-auto text-slate-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+              </svg>
+              <p>Henüz personel eklenmedi. Yukarıdaki alandan ekleyebilir veya örnek listeyi yükleyebilirsiniz.</p>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Özel Birliktelik / Ayrılık Kuralları (Minimal Eşleşme Paneli) -->
+        <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+          <div class="flex items-center justify-between mb-2.5">
+            <div class="flex items-center gap-2">
+              <span class="text-base select-none">🤝</span>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-700">Birlikte / Ayrı Nöbet Kuralları</h3>
+              <span id="pairRulesCountBadge" class="text-[11px] bg-slate-100 text-slate-600 font-bold px-2 py-0.5 rounded-full">0 Kural</span>
+            </div>
+            <span class="text-[11px] text-slate-400 hidden sm:inline">İki personelin yan yana gelme durumunu belirleyin</span>
+          </div>
+
+          <!-- Kural Ekleme Formu (Geniş ve Ferah Tek Satır) -->
+          <div class="flex flex-wrap sm:flex-nowrap items-center gap-2 p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs">
+            <select id="selectPairP1" class="bg-white border border-slate-200 rounded-md px-2.5 py-1.5 font-semibold text-slate-700 outline-none focus:border-teal-500 flex-1 min-w-[130px]">
+              <option value="">1. Personel Seçin</option>
+            </select>
+
+            <select id="selectPairType" class="bg-white border border-slate-200 rounded-md px-2.5 py-1.5 font-bold text-slate-700 outline-none focus:border-teal-500 min-w-[170px]">
+              <option value="separate">🚫 Asla Birlikte Tutmasın</option>
+              <option value="together">🤝 Hep Birlikte Tutsun</option>
+            </select>
+
+            <select id="selectPairP2" class="bg-white border border-slate-200 rounded-md px-2.5 py-1.5 font-semibold text-slate-700 outline-none focus:border-teal-500 flex-1 min-w-[130px]">
+              <option value="">2. Personel Seçin</option>
+            </select>
+
+            <button type="button" id="btnAddPairRule" class="bg-[#00897b] hover:bg-[#00796b] text-white font-bold px-3 py-1.5 rounded-md transition flex items-center justify-center gap-1 shadow-xs shrink-0 whitespace-nowrap">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+              </svg>
+              Kural Ekle
+            </button>
+          </div>
+
+          <!-- Ekli Kuralların Listesi (Rozetler / Chips) -->
+          <div id="pairRulesList" class="flex flex-wrap gap-2 mt-2.5">
+            <span class="text-xs text-slate-400 italic">Henüz özel kural eklenmedi.</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Sağ Sütun (4 Kolon): Canlı İstatistik ve Dağıtım Paneli (Görseldeki Bilgi Alanı - Sticky) -->
+      <div class="lg:col-span-4 flex flex-col gap-4 lg:sticky lg:top-6">
+        
+        <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4 pb-2 border-b border-slate-100">
+            Kadro ve Nöbet Durumu
+          </h2>
+
+          <div class="space-y-4">
+            <!-- Toplam Personel Sayısı -->
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-medium text-slate-600">Toplam personel sayısı</span>
+              <span id="statStaffCount" class="text-base font-bold text-slate-800 bg-slate-100 px-3 py-0.5 rounded-full">0</span>
+            </div>
+
+            <!-- Kaç nöbet yazıldı / Kaç nöbet yazılacak & Canlı İlerleme Çubuğu -->
+            <div class="flex flex-col gap-1.5 border-t border-slate-100 pt-3">
+              <div class="flex items-center justify-between">
+                <span class="text-sm font-medium text-slate-600">Kaç nöbet yazıldı / Kaç nöbet yazılacak</span>
+                <span id="statDutyPercent" class="text-xs font-bold text-teal-700">%0</span>
+              </div>
+              <div class="flex items-center justify-between mt-0.5">
+                <span id="statDutyFraction" class="text-lg font-extrabold text-teal-800">0 / 0</span>
+                <span id="statStatusBadge" class="text-xs px-2.5 py-0.5 rounded-full font-semibold bg-amber-100 text-amber-800">Eşit Dağıtılmalı</span>
+              </div>
+
+              <!-- Dinamik Doluluk / İlerleme Çubuğu -->
+              <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden mt-1">
+                <div id="statProgressBar" class="bg-teal-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+              </div>
+
+              <!-- Canlı Kalan / Durum Açıklama Mesajı -->
+              <p id="statRemainingMessage" class="text-xs font-medium text-slate-500 mt-0.5"></p>
+            </div>
+
+            <!-- ADİL DAĞITIM REHBERİ (Otomatik Matematiksel Kılavuz) -->
+            <div class="bg-gradient-to-br from-teal-50 to-emerald-50/70 border border-teal-200 rounded-xl p-3.5 shadow-xs">
+              <div class="flex items-center gap-1.5 text-xs font-bold text-teal-900 uppercase tracking-wide mb-1.5">
+                <svg class="w-4 h-4 text-teal-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span>Adil Dağıtım Rehberi</span>
+              </div>
+              <div id="statOptimalGuide" class="text-xs text-teal-950 font-normal leading-relaxed">
+                Hesaplanıyor...
+              </div>
+            </div>
+
+            <!-- MEVCUT KADRO DAĞILIMI (Yazıldıkça Canlı Güncellenen Özet) -->
+            <div class="border border-slate-200 rounded-lg p-3 bg-white text-xs">
+              <div class="flex items-center justify-between font-semibold text-slate-700 mb-2">
+                <span>Mevcut Dağılım Durumu:</span>
+                <span id="statAssignedStaffRatio" class="text-slate-500 font-normal">0/0 personele yazıldı</span>
+              </div>
+              <div id="statCurrentTally" class="flex flex-wrap gap-1.5 min-h-[24px]">
+                <span class="text-slate-400 italic">Henüz nöbet girilmedi.</span>
+              </div>
+            </div>
+
+            <!-- Detaylı Gün Analizi (Yalnızca Hafta İçi / Hafta Sonu Dağılımı) -->
+            <div class="bg-slate-50 p-3 rounded-lg text-xs text-slate-600 border border-slate-100">
+              <div class="flex justify-between items-center">
+                <span class="font-medium text-slate-600">Hafta İçi / Hafta Sonu:</span>
+                <span id="statDayBreakdown" class="font-semibold text-slate-800">0 / 0</span>
+              </div>
+            </div>
+
+            <!-- Hızlı Aksiyon Butonları -->
+            <div class="pt-2 flex flex-col gap-2">
+              <div class="grid grid-cols-2 gap-2">
+                <button 
+                  type="button" 
+                  id="btnAutoDistribute" 
+                  class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-2 px-3 rounded-lg text-xs flex items-center justify-center gap-1.5 transition"
+                  title="Tüm personele matematiksel eşit dağıtır"
+                >
+                  <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                  </svg>
+                  Eşit Dağıt
+                </button>
+                <button 
+                  type="button" 
+                  id="btnClearTargets" 
+                  class="bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700 border border-transparent hover:border-rose-200 font-medium py-2 px-3 rounded-lg text-xs flex items-center justify-center gap-1.5 transition"
+                  title="Sayıları temizleyip elle tek tek yazmaya başlamanızı sağlar"
+                >
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                  </svg>
+                  Sayıları Sıfırla
+                </button>
+              </div>
+
+              <button 
+                type="button" 
+                id="btnGenerateSchedule" 
+                class="w-full bg-[#00897b] hover:bg-[#00796b] text-white font-bold py-2.5 px-4 rounded-lg text-sm shadow-md transition flex items-center justify-center gap-2 transform active:scale-95"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                </svg>
+                Nöbet Listesini Oluştur
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Sonuç Çizelgesi ve Çıktı Bölümü (Schedule Section) -->
+    <section id="resultsSection" class="hidden transition-all duration-300">
+      
+      <!-- Başlık ve Kontrol Araç Çubuğu -->
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="bg-[#00897b] text-white font-bold text-xs w-6 h-6 flex items-center justify-center rounded">✓</span>
+            <h2 class="text-lg font-bold text-slate-800">Aylık Nöbet Çizelgesi</h2>
+          </div>
+          <p id="scheduleSubhead" class="text-xs text-slate-500 mt-0.5">Dönem: 01.11.2026 - 30.11.2026</p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2 no-print">
+          <!-- Sekme Değiştirici -->
+          <div class="inline-flex rounded-lg border border-slate-200 p-0.5 bg-slate-50">
+            <button id="tabScheduleView" class="px-3 py-1.5 text-xs font-semibold rounded-md bg-white shadow-xs text-slate-800">
+              Günlük Tablo
+            </button>
+            <button id="tabStatsView" class="px-3 py-1.5 text-xs font-semibold rounded-md text-slate-500 hover:text-slate-800">
+              Personel Dağılımı
+            </button>
+          </div>
+
+          <!-- Alanları (A-B-C) Eşitle Butonu -->
+          <button id="btnBalanceWorkstations" class="inline-flex items-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-xs" title="Günleri değiştirmeden A, B, C çalışma alanlarını herkese en eşit şekilde dağıtır">
+            <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+            </svg>
+            🎯 Alanları (A-B-C) Eşitle
+          </button>
+
+          <!-- Dışa Aktarma Butonları: Normal Liste & Puantaj Cetveli -->
+          <button id="btnExportNormalExcel" class="inline-flex items-center gap-1.5 bg-slate-100 hover:bg-teal-50 hover:text-teal-800 hover:border-teal-200 border border-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-semibold transition shadow-xs" title="Tarih sırasına göre günlük nöbetçiler ve icmal listesi">
+            <svg class="w-4 h-4 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/>
+            </svg>
+            📋 Normal Liste (Excel)
+          </button>
+
+          <button id="btnExportPuantajExcel" class="inline-flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-xs" title="Ayın tüm günlerini 1-31 matris şeklinde gösteren resmi kurum puantaj formatı">
+            <svg class="w-4 h-4 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            📊 Puantaj Cetveli (Excel)
+          </button>
+
+          <button onclick="window.print()" class="inline-flex items-center gap-1.5 bg-[#00897b] hover:bg-[#00796b] text-white px-3 py-1.5 rounded-lg text-xs font-medium transition shadow-xs">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+            </svg>
+            Yazdır / PDF
+          </button>
+        </div>
+      </div>
+
+      <!-- Kısıtlardan Kaynaklı Boş Kalan Gün Uyarısı -->
+      <div id="unassignedAlert" class="hidden mb-4 p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 flex items-start gap-3 no-print">
+        <svg class="w-5 h-5 text-amber-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+        <div>
+          <h4 class="font-bold text-sm">Dikkat: Bazı günlerde nöbetçi atanamadı!</h4>
+          <p class="text-xs text-amber-700 mt-1" id="unassignedAlertText">
+            Personel izinleri veya ardışık nöbet/izin kısıtlamaları nedeniyle bazı nöbet slotları otomatik doldurulamadı. Tablodan manuel olarak atama yapabilirsiniz.
+          </p>
+        </div>
+      </div>
+
+      <!-- Görünüm 1: Günlük Takvim Çizelgesi (Resmi Kurum Formatı) -->
+      <div id="scheduleTableView" class="bg-white border-2 border-black rounded-lg overflow-hidden shadow-sm mb-6">
+        
+        <!-- Resmi T.C. Başlık Alanı (Fotoğraftaki Birebir Düzen) -->
+        <div class="text-center py-4 px-3 border-b-2 border-black bg-white select-none">
+          <div class="text-xs font-bold tracking-wider text-black">T.C.</div>
+          <div class="text-xs sm:text-sm font-extrabold tracking-wider text-black">SAĞLIK BAKANLIĞI</div>
+          <div id="displayHospitalName" class="text-xs sm:text-sm font-extrabold tracking-wider text-black mt-0.5">MARDİN EĞİTİM VE ARAŞTIRMA HASTANESİ</div>
+          <div id="displayPeriodUnitTitle" class="text-xs sm:text-sm font-black tracking-wide text-black mt-1">2026 EKİM AYI TRANSFÜZYON MERKEZİ NÖBET LİSTESİ</div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-center border-collapse text-black" id="rosterTable">
+            <thead id="rosterThead">
+              <!-- JS renderRosterTableRows tarafından temiz ve dinamik çizilir -->
+            </thead>
+            <tbody id="rosterTableBody" class="divide-y divide-black text-xs sm:text-sm">
+              <!-- JS ile Satırlar Eklenir -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Görünüm 2: Personel Dağılım ve İstatistik Tablosu -->
+      <div id="scheduleStatsView" class="hidden bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm mb-6">
+        <div class="p-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h3 class="text-sm font-bold text-slate-800">Personel Nöbet Günleri ve Çalışma Alanı Özeti</h3>
+            <p class="text-xs text-slate-500">Her personelin nöbet tuttuğu günlerin sıralı listesi ve A-B-C masa dağılım özeti.</p>
+          </div>
+          <button type="button" id="btnStatsBalanceWorkstations" class="px-2.5 py-1 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-md transition flex items-center gap-1 shadow-xs">
+            🎯 Masaları Otomatik Dengele
+          </button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse" id="statsReportTable">
+            <thead id="statsReportThead">
+              <!-- JS renderRosterStatsRows tarafından dinamik oluşturulur -->
+            </thead>
+            <tbody id="statsTableBody" class="divide-y divide-slate-100 text-sm">
+              <!-- JS ile Satırlar Eklenir -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Yazdırma için Resmi Onay Alanı (Sadece Yazdırmada Görünür) -->
+      <div class="print-only hidden mt-12 pt-6 border-t border-slate-300">
+        <div class="grid grid-cols-3 gap-6 text-center text-xs">
+          <div>
+            <p class="font-bold">Düzenleyen</p>
+            <p class="mt-8">Nöbet Sorumlusu</p>
+          </div>
+          <div>
+            <p class="font-bold">Kontrol Eden</p>
+            <p class="mt-8">Birim Yöneticisi</p>
+          </div>
+          <div>
+            <p class="font-bold">Onaylayan</p>
+            <p class="mt-8">Kurum / Başhekimlik</p>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <!-- Mazeret / İzin Günü Seçim Modalı -->
+  <div id="excuseModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white rounded-2xl max-w-lg sm:max-w-xl w-full overflow-hidden shadow-2xl border border-slate-100 animate-in fade-in zoom-in duration-150">
+      
+      <div class="bg-[#00897b] text-white px-4 py-3 flex items-center justify-between">
+        <div>
+          <h3 class="font-bold text-sm sm:text-base" id="modalStaffName">Personel Gün Tercihleri ve İzinleri</h3>
+          <p class="text-[11px] text-teal-100" id="modalStaffSubhead">Nöbet tutulamayacak günleri veya nöbet talep edilen günleri belirleyin</p>
+        </div>
+        <button id="closeModalBtn" class="text-teal-200 hover:text-white p-1 rounded">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="p-3.5 sm:p-4 max-h-[72vh] overflow-y-auto">
+        
+        <!-- İşlem Türü Seçici (İzin vs Nöbet Tercihi - Kompakt ve Şık) -->
+        <div class="bg-slate-100 p-1 rounded-lg flex items-center gap-1.5 mb-2.5 text-xs font-semibold">
+          <button type="button" id="btnToolExcuse" class="flex-1 py-1.5 px-2.5 rounded-md bg-white text-rose-700 shadow-xs border border-rose-300 font-bold flex items-center justify-center gap-1.5 transition whitespace-nowrap text-xs">
+            <span class="w-2 h-2 rounded-full bg-rose-500 shrink-0"></span>
+            <span>🚫 Nöbet Tutamaz (İzin)</span>
+          </button>
+          <button type="button" id="btnToolPreferred" class="flex-1 py-1.5 px-2.5 rounded-md text-slate-600 hover:text-slate-800 flex items-center justify-center gap-1.5 transition font-semibold whitespace-nowrap text-xs">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+            <span>⭐ Nöbet Tutmak İstiyor (Talep)</span>
+          </button>
+        </div>
+
+        <!-- Hızlı Kısayol Butonları ve Bilgilendirme -->
+        <div class="flex items-center justify-between mb-2 text-xs">
+          <span class="text-slate-500 text-[11px]" id="modalModeHint">Tıkladığınız günler <strong>İzinli (Tutamaz)</strong> olarak işaretlenir.</span>
+          <div>
+            <button id="btnModalClearAll" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded font-medium transition text-[11px] flex items-center gap-1">
+              <svg class="w-3 h-3 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+              </svg>
+              Temizle
+            </button>
+          </div>
+        </div>
+
+        <!-- 7 Günlük Takvim Başlık Şeridi (Cumartesi ve Pazar En Sağda) -->
+        <div class="grid grid-cols-7 gap-1 mb-1 text-center text-[11px] font-bold select-none">
+          <div class="py-1 bg-slate-100 text-slate-700 rounded"><span class="hidden sm:inline">Pazartesi</span><span class="sm:hidden">Pzt</span></div>
+          <div class="py-1 bg-slate-100 text-slate-700 rounded"><span class="hidden sm:inline">Salı</span><span class="sm:hidden">Sal</span></div>
+          <div class="py-1 bg-slate-100 text-slate-700 rounded"><span class="hidden sm:inline">Çarşamba</span><span class="sm:hidden">Çar</span></div>
+          <div class="py-1 bg-slate-100 text-slate-700 rounded"><span class="hidden sm:inline">Perşembe</span><span class="sm:hidden">Per</span></div>
+          <div class="py-1 bg-slate-100 text-slate-700 rounded"><span class="hidden sm:inline">Cuma</span><span class="sm:hidden">Cum</span></div>
+          <div class="py-1 bg-amber-100 text-amber-900 border border-amber-300 rounded font-extrabold"><span class="hidden sm:inline">Cumartesi</span><span class="sm:hidden">Cmt</span></div>
+          <div class="py-1 bg-amber-100 text-amber-900 border border-amber-300 rounded font-extrabold"><span class="hidden sm:inline">Pazar</span><span class="sm:hidden">Paz</span></div>
+        </div>
+
+        <!-- Günler Izgarası (7 Kolon Düzeni) -->
+        <div id="modalDaysGrid" class="grid grid-cols-7 gap-1 sm:gap-1.5">
+          <!-- Dinamik Takvim Kutucukları -->
+        </div>
+
+      </div>
+
+      <div class="bg-slate-50 px-4 py-2.5 border-t border-slate-100 flex items-center justify-between">
+        <span id="modalSelectedCount" class="text-xs text-slate-500 font-medium">0 gün izinli, 0 gün nöbet talep edildi</span>
+        <button id="saveExcusesBtn" class="bg-[#00897b] hover:bg-[#00796b] text-white px-3.5 py-1.5 rounded-lg text-xs font-bold transition">
+          Kaydet ve Kapat
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Javascript Kod Bloğu -->
+  <script>
+    // --- UYGULAMA DURUMU (STATE) ---
+    const state = {
+      dateMode: 'monthYear', // 'monthYear' | 'dateRange'
+      selectedMonth: 10,     // 0: Ocak, ..., 11: Aralık
+      selectedYear: 2026,
+      startDate: '',
+      endDate: '',
+      peoplePerShift: 3, // A, B, C masaları için varsayılan 3 kişi
+      maxGapDays: 4,     // İki nöbet arası en fazla izin verilen boş gün sayısı (Varsayılan 4 gün)
+      maxConsecutive: 1, // 24 saat usulü gereği sabit 1
+      restDays: 1,       // Nöbet ertesi yasal zorunlu dinlenme sabit 1 gün
+      separateWeekend: false,
+      staffList: [],
+      pairRules: [], // { id, p1, p2, type: 'separate' | 'together' }
+      currentActiveModalStaffId: null,
+      modalActiveMode: 'excuse', // 'excuse' | 'preferred'
+      tempExcuses: new Set(),
+      tempPreferred: new Set(),
+      scheduleResult: null // Üretilen nöbet listesi
+    };
+
+    // Varsayılan Personel Kadrosu (Türkçe Harf Sırasına Göre Düzenlenmiştir)
+    const SAMPLE_STAFF = [
+      { id: '1', name: 'AHMET BİLGİÇ', target: '', isSet: false, targetWk: '', targetWe: '', excuses: [], preferred: [] },
+      { id: '2', name: 'AYŞENUR ÖZGÜN', target: '', isSet: false, targetWk: '', targetWe: '', excuses: [], preferred: [] },
+      { id: '3', name: 'BEKİR DURMAZ', target: '', isSet: false, targetWk: '', targetWe: '', excuses: [], preferred: [] },
+      { id: '4', name: 'BERNA ERGÜL', target: '', isSet: false, targetWk: '', targetWe: '', excuses: [], preferred: [] },
+      { id: '5', name: 'HALİME VARİŞ', target: '', isSet: false, targetWk: '', targetWe: '', excuses: [], preferred: [] },
+      { id: '6', name: 'M. TAHİR AĞIRMAN', target: '', isSet: false, targetWk: '', targetWe: '', excuses: [], preferred: [] },
+      { id: '7', name: 'MAHSUM KARAMAN', target: '', isSet: false, targetWk: '', targetWe: '', excuses: [], preferred: [] },
+      { id: '8', name: 'MEHMET ACUN', target: '', isSet: false, targetWk: '', targetWe: '', excuses: [], preferred: [] },
+      { id: '9', name: 'RIDVAN AR', target: '', isSet: false, targetWk: '', targetWe: '', excuses: [], preferred: [] }
+    ];
+
+    // Gün Adları
+    const DAY_NAMES_TR = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
+
+    // --- YARDIMCI TARİH FONKSİYONLARI ---
+    function formatISODate(date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    // Fotoğraftaki resmi tarih formatı: "1.10.2026", "2.10.2026" (baştaki sıfırsız gün ve ay)
+    function formatOfficialDate(isoStr) {
+      if (!isoStr) return '';
+      const parts = isoStr.split('-');
+      if (parts.length !== 3) return isoStr;
+      const day = parseInt(parts[2], 10);
+      const month = parseInt(parts[1], 10);
+      return `${day}.${month}.${parts[0]}`;
+    }
+
+    function formatTRDate(isoStr) {
+      if (!isoStr) return '';
+      const parts = isoStr.split('-');
+      if (parts.length !== 3) return isoStr;
+      return `${parts[2]}.${parts[1]}.${parts[0]}`;
+    }
+
+    // Dönem ve Birim Başlığı Metni Oluşturucu (Örn: 2026 ARALIK AYI TRANSFÜZYON MERKEZİ NÖBET LİSTESİ)
+    function getOfficialPeriodTitle() {
+      const hospital = (document.getElementById('inputHospitalName')?.value || 'MARDİN EĞİTİM VE ARAŞTIRMA HASTANESİ').trim().toLocaleUpperCase('tr-TR');
+      const unit = (document.getElementById('inputUnitName')?.value || 'TRANSFÜZYON MERKEZİ').trim().toLocaleUpperCase('tr-TR');
+      
+      let year = state.selectedYear;
+      let monthName = 'DÖNEMİ';
+      if (state.startDate) {
+        const parts = state.startDate.split('-');
+        year = parts[0];
+        const mIdx = parseInt(parts[1], 10) - 1;
+        const MONTH_NAMES = ['OCAK', 'ŞUBAT', 'MART', 'NİSAN', 'MAYIS', 'HAZİRAN', 'TEMMUZ', 'AĞUSTOS', 'EYLÜL', 'EKİM', 'KASIM', 'ARALIK'];
+        monthName = MONTH_NAMES[mIdx] || '';
+      }
+      return {
+        hospital,
+        unit,
+        fullTitle: `${year} ${monthName} AYI ${unit} NÖBET LİSTESİ`
+      };
+    }
+
+    function getDaysBetween(startStr, endStr) {
+      const dates = [];
+      let cur = new Date(startStr + 'T00:00:00');
+      const end = new Date(endStr + 'T00:00:00');
+      while (cur <= end) {
+        const iso = formatISODate(cur);
+        const dayIdx = cur.getDay();
+        const isWeekend = (dayIdx === 0 || dayIdx === 6);
+        dates.push({
+          dateStr: iso,
+          dayName: DAY_NAMES_TR[dayIdx],
+          dayIndex: dayIdx,
+          isWeekend: isWeekend
+        });
+        cur.setDate(cur.getDate() + 1);
+      }
+      return dates;
+    }
+
+    // Bildirim Toast Gösterici (alert() yerine)
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      
+      const colors = {
+        success: 'bg-emerald-600 text-white',
+        warning: 'bg-amber-600 text-white',
+        error: 'bg-rose-600 text-white',
+        info: 'bg-slate-800 text-white'
+      };
+
+      toast.className = `px-4 py-2.5 rounded-lg text-sm font-medium shadow-lg transition-all duration-300 transform translate-y-2 opacity-0 pointer-events-auto flex items-center gap-2 ${colors[type] || colors.info}`;
+      toast.innerHTML = `
+        <span>${message}</span>
+      `;
+      container.appendChild(toast);
+
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      });
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    // --- DOM ELEMENTLERİ ---
+    const elStartDate = document.getElementById('startDate');
+    const elEndDate = document.getElementById('endDate');
+    const elPeoplePerShift = document.getElementById('peoplePerShift');
+    const elMaxGapDays = document.getElementById('maxGapDays');
+    const elSeparateWeekend = document.getElementById('separateWeekend');
+    const elStaffTableBody = document.getElementById('staffTableBody');
+    const elEmptyStaffMsg = document.getElementById('emptyStaffMsg');
+    const elAddStaffForm = document.getElementById('addStaffForm');
+    const elStaffNameInput = document.getElementById('staffNameInput');
+    const elBtnBulkSample = document.getElementById('btnBulkSample');
+    const elBtnSortStaffAZ = document.getElementById('btnSortStaffAZ');
+    const elBtnAutoDistribute = document.getElementById('btnAutoDistribute');
+    const elBtnClearTargets = document.getElementById('btnClearTargets');
+    const elBtnGenerateSchedule = document.getElementById('btnGenerateSchedule');
+
+    // Ay ve Yıl Seçimi Elemanları
+    const elBtnModeMonthYear = document.getElementById('btnModeMonthYear');
+    const elBtnModeDateRange = document.getElementById('btnModeDateRange');
+    const elWrapperMonthYear = document.getElementById('wrapperMonthYear');
+    const elWrapperDateRange = document.getElementById('wrapperDateRange');
+    const elSelectMonth = document.getElementById('selectMonth');
+    const elSelectYear = document.getElementById('selectYear');
+    const elMonthDaysInfo = document.getElementById('monthDaysInfo');
+
+    // Birlikte / Ayrı Tutma Kuralları Elemanları
+    const elSelectPairP1 = document.getElementById('selectPairP1');
+    const elSelectPairP2 = document.getElementById('selectPairP2');
+    const elSelectPairType = document.getElementById('selectPairType');
+    const elBtnAddPairRule = document.getElementById('btnAddPairRule');
+    const elPairRulesList = document.getElementById('pairRulesList');
+    const elPairRulesCountBadge = document.getElementById('pairRulesCountBadge');
+
+    // Stats
+    const elStatStaffCount = document.getElementById('statStaffCount');
+    const elStatDutyFraction = document.getElementById('statDutyFraction');
+    const elStatStatusBadge = document.getElementById('statStatusBadge');
+    const elStatTotalDays = document.getElementById('statTotalDays');
+    const elStatDayBreakdown = document.getElementById('statDayBreakdown');
+    const elStatRequiredDuties = document.getElementById('statRequiredDuties');
+    const elStatDutyPercent = document.getElementById('statDutyPercent');
+    const elStatProgressBar = document.getElementById('statProgressBar');
+    const elStatRemainingMessage = document.getElementById('statRemainingMessage');
+    const elStatOptimalGuide = document.getElementById('statOptimalGuide');
+    const elStatAssignedStaffRatio = document.getElementById('statAssignedStaffRatio');
+    const elStatCurrentTally = document.getElementById('statCurrentTally');
+
+    // Results
+    const elResultsSection = document.getElementById('resultsSection');
+    const elRosterTableBody = document.getElementById('rosterTableBody');
+    const elScheduleTableView = document.getElementById('scheduleTableView');
+    const elScheduleStatsView = document.getElementById('scheduleStatsView');
+    const elStatsTableBody = document.getElementById('statsTableBody');
+    const elStatsReportThead = document.getElementById('statsReportThead');
+    const elTabScheduleView = document.getElementById('tabScheduleView');
+    const elTabStatsView = document.getElementById('tabStatsView');
+    const elScheduleSubhead = document.getElementById('scheduleSubhead');
+    const elUnassignedAlert = document.getElementById('unassignedAlert');
+    const elBtnExportNormalExcel = document.getElementById('btnExportNormalExcel');
+    const elBtnExportPuantajExcel = document.getElementById('btnExportPuantajExcel');
+    const elBtnBalanceWorkstations = document.getElementById('btnBalanceWorkstations');
+    const elBtnStatsBalanceWorkstations = document.getElementById('btnStatsBalanceWorkstations');
+
+    // Modal
+    const elExcuseModal = document.getElementById('excuseModal');
+    const elModalStaffName = document.getElementById('modalStaffName');
+    const elModalDaysGrid = document.getElementById('modalDaysGrid');
+    const elModalSelectedCount = document.getElementById('modalSelectedCount');
+    const elCloseModalBtn = document.getElementById('closeModalBtn');
+    const elSaveExcusesBtn = document.getElementById('saveExcusesBtn');
+    const elBtnModalClearAll = document.getElementById('btnModalClearAll');
+    const elBtnToolExcuse = document.getElementById('btnToolExcuse');
+    const elBtnToolPreferred = document.getElementById('btnToolPreferred');
+    const elModalModeHint = document.getElementById('modalModeHint');
+
+    // --- BAŞLANGIÇ AYARLARI ---
+    function initDefaultDates() {
+      const now = new Date();
+      // Bir sonraki ayı otomatik belirle (Örn: Kasım'da girildiyse Aralık, Aralık'ta girildiyse Ocak ve yeni yıl)
+      let nextMonth = now.getMonth() + 1;
+      let nextYear = now.getFullYear();
+      if (nextMonth > 11) {
+        nextMonth = 0; // Ocak
+        nextYear += 1; // Yeni yıla geçiş
+      }
+
+      state.selectedYear = nextYear;
+      state.selectedMonth = nextMonth;
+
+      // Yıl seçeneklerini dinamik oluştur (2040'a kadar)
+      elSelectYear.innerHTML = '';
+      const startYear = Math.min(2024, now.getFullYear() - 2);
+      const endYear = 2040;
+      for (let y = startYear; y <= endYear; y++) {
+        const opt = document.createElement('option');
+        opt.value = y;
+        opt.textContent = y;
+        if (y === state.selectedYear) opt.selected = true;
+        elSelectYear.appendChild(opt);
+      }
+      elSelectMonth.value = state.selectedMonth;
+
+      applyMonthYearSelection(false);
+      state.staffList = JSON.parse(JSON.stringify(SAMPLE_STAFF));
+    }
+
+    // Seçilen Ay ve Yıla Göre 1. Günden Son Güne Otomatik Aralık Belirleme
+    function applyMonthYearSelection(shouldUpdateStats = true) {
+      const y = parseInt(elSelectYear.value);
+      const m = parseInt(elSelectMonth.value);
+      state.selectedYear = y;
+      state.selectedMonth = m;
+
+      // 1. gün ve son gün (0 kullanarak o ayın son gününü kesin alıyoruz, artık yıl dahil 28/29/30/31)
+      const firstDay = new Date(y, m, 1);
+      const lastDay = new Date(y, m + 1, 0);
+
+      state.startDate = formatISODate(firstDay);
+      state.endDate = formatISODate(lastDay);
+
+      elStartDate.value = state.startDate;
+      elEndDate.value = state.endDate;
+
+      const monthName = elSelectMonth.options[elSelectMonth.selectedIndex].text;
+      const totalDays = lastDay.getDate();
+      if (elMonthDaysInfo) {
+        elMonthDaysInfo.textContent = `${totalDays} gün (1 - ${totalDays} ${monthName} ${y})`;
+      }
+
+      if (shouldUpdateStats) {
+        updateStatistics();
+      }
+    }
+
+    // Tarih Modu Değiştirme (Ay/Yıl vs Manuel Aralık)
+    function setDateMode(mode) {
+      state.dateMode = mode;
+      if (mode === 'monthYear') {
+        elWrapperMonthYear.classList.remove('hidden');
+        elWrapperDateRange.classList.add('hidden');
+        elBtnModeMonthYear.className = 'px-3 py-1.5 rounded-md bg-white text-teal-800 shadow-xs transition flex items-center gap-1.5';
+        elBtnModeDateRange.className = 'px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 transition flex items-center gap-1.5';
+        applyMonthYearSelection();
+      } else {
+        elWrapperMonthYear.classList.add('hidden');
+        elWrapperDateRange.classList.remove('hidden');
+        elBtnModeDateRange.className = 'px-3 py-1.5 rounded-md bg-white text-teal-800 shadow-xs transition flex items-center gap-1.5';
+        elBtnModeMonthYear.className = 'px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 transition flex items-center gap-1.5';
+        state.startDate = elStartDate.value;
+        state.endDate = elEndDate.value;
+        updateStatistics();
+      }
+    }
+
+    // --- İSTATİSTİK VE CANLI SAYAÇLARI GÜNCELLEME ---
+    function updateStatistics() {
+      if (!state.startDate || !state.endDate) return;
+
+      const days = getDaysBetween(state.startDate, state.endDate);
+      const totalDays = days.length;
+      const weekendDays = days.filter(d => d.isWeekend).length;
+      const weekdayDays = totalDays - weekendDays;
+      const peoplePerShift = parseInt(elPeoplePerShift.value) || 1;
+      const totalRequired = totalDays * peoplePerShift;
+      const staffCount = state.staffList.length;
+
+      // Toplam personel sayısı
+      if (elStatStaffCount) {
+        elStatStaffCount.textContent = staffCount;
+      }
+
+      // Personellere yazılan toplam hedef nöbet sayısı ve dağılım sıklığı
+      let totalAssignedTarget = 0;
+      const targetCounts = {}; // { hedefNöbetSayısı: personelAdedi }
+
+      // Nöbeti elle girilmiş (yazılmış) olanlar ve henüz girilmemiş (kalan) olanlar
+      const assignedStaff = state.staffList.filter(p => p.isSet && p.target !== '' && !isNaN(p.target));
+      const unassignedStaff = state.staffList.filter(p => !p.isSet || p.target === '' || isNaN(p.target));
+      const assignedStaffCount = assignedStaff.length;
+      const unassignedStaffCount = unassignedStaff.length;
+
+      assignedStaff.forEach(p => {
+        let personTotal = 0;
+        if (state.separateWeekend) {
+          personTotal = (parseInt(p.targetWk) || 0) + (parseInt(p.targetWe) || 0);
+        } else {
+          personTotal = parseInt(p.target) || 0;
+        }
+        totalAssignedTarget += personTotal;
+        targetCounts[personTotal] = (targetCounts[personTotal] || 0) + 1;
+      });
+
+      // Kesirli nöbet durumu (yazılan / gereken)
+      if (elStatDutyFraction) {
+        elStatDutyFraction.textContent = `${totalAssignedTarget} / ${totalRequired}`;
+      }
+
+      // Yüzde ve İlerleme Çubuğu (Progress Bar)
+      const percentage = totalRequired > 0 ? Math.round((totalAssignedTarget / totalRequired) * 100) : 0;
+      if (elStatDutyPercent) {
+        elStatDutyPercent.textContent = `%${percentage}`;
+      }
+      if (elStatProgressBar) {
+        elStatProgressBar.style.width = `${Math.min(100, percentage)}%`;
+        if (totalAssignedTarget === totalRequired && totalRequired > 0) {
+          elStatProgressBar.className = 'bg-emerald-600 h-2 rounded-full transition-all duration-300';
+        } else if (totalAssignedTarget > totalRequired) {
+          elStatProgressBar.className = 'bg-rose-600 h-2 rounded-full transition-all duration-300';
+        } else {
+          elStatProgressBar.className = 'bg-teal-600 h-2 rounded-full transition-all duration-300';
+        }
+      }
+
+      // Kalan ve Durum Açıklama Bildirimi
+      if (elStatRemainingMessage) {
+        if (totalRequired === 0) {
+          elStatRemainingMessage.innerHTML = '<span class="text-slate-400">Tarih aralığı seçiniz.</span>';
+        } else if (totalAssignedTarget === totalRequired) {
+          elStatRemainingMessage.innerHTML = `<span class="text-emerald-700 font-semibold">✓ Harika! Tüm nöbetler (${totalRequired}) eksiksiz paylaştırıldı.</span>`;
+        } else if (totalAssignedTarget < totalRequired) {
+          const diff = totalRequired - totalAssignedTarget;
+          elStatRemainingMessage.innerHTML = `<span class="text-amber-700 font-medium">Kalan: <strong>${diff} nöbet</strong> daha dağıtılmayı bekliyor.</span>`;
+        } else {
+          const diff = totalAssignedTarget - totalRequired;
+          elStatRemainingMessage.innerHTML = `<span class="text-rose-600 font-semibold">⚠️ Dikkat: Gereken sayıdan <strong>${diff} nöbet fazla</strong> yazıldı!</span>`;
+        }
+      }
+
+      // --- 1. DİNAMİK ADİL DAĞITIM REHBERİ (YAZILDIKÇA ANLIK KALANI HESAPLAYAN MOTOR) ---
+      if (elStatOptimalGuide) {
+        if (staffCount === 0) {
+          elStatOptimalGuide.innerHTML = '<span class="text-slate-500 italic">Kılavuz hesaplaması için lütfen personel ekleyin.</span>';
+        } else if (totalRequired === 0) {
+          elStatOptimalGuide.innerHTML = '<span class="text-slate-500 italic">Seçilen dönemde nöbet görevi bulunmuyor.</span>';
+        } else if (!state.separateWeekend) {
+          // Normal Mod (Hafta sonu birleşik)
+          if (assignedStaffCount === 0) {
+            // Henüz hiçbir personele nöbet yazılmadı (Tümü Boş / Başlangıç Hali)
+            const base = Math.floor(totalRequired / staffCount);
+            const remainder = totalRequired % staffCount;
+            const others = staffCount - remainder;
+
+            if (remainder === 0) {
+              elStatOptimalGuide.innerHTML = `
+                Toplam <strong>${totalRequired} nöbet</strong> ve <strong>${staffCount} personel</strong> için:
+                <div class="mt-1 font-medium text-emerald-800">
+                  👉 Tüm personele eşit şekilde <strong>her birine ${base} nöbet</strong> düşmektedir.
+                </div>
+              `;
+            } else {
+              elStatOptimalGuide.innerHTML = `
+                Toplam <strong>${totalRequired} nöbet</strong> ve <strong>${staffCount} personel</strong> için en adil dağılım:
+                <div class="mt-1.5 space-y-1">
+                  <div class="flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-teal-600"></span>
+                    <span><strong class="text-teal-900">${remainder} personele ${base + 1} nöbet</strong></span>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-teal-600"></span>
+                    <span><strong class="text-teal-900">${others} personele ${base} nöbet</strong> düşmektedir.</span>
+                  </div>
+                </div>
+              `;
+            }
+          } else if (unassignedStaffCount > 0) {
+            // Bazı personellere nöbet yazıldı, KALANLARA ANLIK DAĞITIM HESAPLANIYOR
+            const remainingDuties = totalRequired - totalAssignedTarget;
+
+            let headerHtml = `
+              <div class="flex items-center justify-between mb-1 pb-1 border-b border-teal-200/60">
+                <span class="text-[11px] font-bold text-teal-900 flex items-center gap-1">
+                  <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                  KALAN NÖBET DAĞILIMI
+                </span>
+                <span class="text-[10px] bg-teal-200/70 text-teal-900 px-1.5 py-0.5 rounded font-bold">
+                  ${assignedStaffCount} Yazıldı / ${unassignedStaffCount} Kalan
+                </span>
+              </div>
+            `;
+
+            if (remainingDuties < 0) {
+              elStatOptimalGuide.innerHTML = headerHtml + `
+                <div class="text-rose-700 font-semibold text-xs mt-1">
+                  ⚠️ Yazılan nöbetler toplam ihtiyacı aştı (<strong>${Math.abs(remainingDuties)} nöbet fazla</strong>). Kalan personele nöbet kalmadı.
+                </div>
+              `;
+            } else if (remainingDuties === 0) {
+              elStatOptimalGuide.innerHTML = headerHtml + `
+                <div class="text-teal-900 font-medium text-xs mt-1">
+                  Gereken tüm nöbetler (${totalRequired}) yazıldı. Kalan <strong>${unassignedStaffCount} personele 0 nöbet</strong> kalmıştır.
+                </div>
+              `;
+            } else {
+              const remBase = Math.floor(remainingDuties / unassignedStaffCount);
+              const remRemainder = remainingDuties % unassignedStaffCount;
+              const remOthers = unassignedStaffCount - remRemainder;
+
+              let bodyHtml = `
+                <div class="text-slate-700 text-xs mb-1">
+                  Kalan <strong>${remainingDuties} nöbet</strong> için (<strong>${unassignedStaffCount} personele</strong>):
+                </div>
+              `;
+
+              if (remRemainder === 0) {
+                bodyHtml += `
+                  <div class="mt-1 font-bold text-teal-950 bg-white/75 p-1.5 rounded border border-teal-200">
+                    👉 Kalan <strong class="text-teal-800">${unassignedStaffCount} personele ${remBase} nöbet</strong> düşmektedir.
+                  </div>
+                `;
+              } else {
+                bodyHtml += `
+                  <div class="mt-1 space-y-1 bg-white/75 p-1.5 rounded border border-teal-200 text-slate-800">
+                    <div class="flex items-center gap-1.5">
+                      <span class="w-1.5 h-1.5 rounded-full bg-teal-600"></span>
+                      <span><strong class="text-teal-900">${remRemainder} personele ${remBase + 1} nöbet</strong></span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                      <span class="w-1.5 h-1.5 rounded-full bg-teal-600"></span>
+                      <span><strong class="text-teal-900">${remOthers} personele ${remBase} nöbet</strong> düşmektedir.</span>
+                    </div>
+                  </div>
+                `;
+              }
+              elStatOptimalGuide.innerHTML = headerHtml + bodyHtml;
+            }
+          } else {
+            // unassignedStaffCount === 0 (Tüm personellere sayı yazıldı)
+            const diff = totalRequired - totalAssignedTarget;
+            if (diff === 0) {
+              elStatOptimalGuide.innerHTML = `
+                <div class="text-emerald-800 font-bold flex items-center gap-1.5">
+                  <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                  </svg>
+                  Tam Dağıtıldı!
+                </div>
+                <div class="text-xs text-emerald-950 mt-1">
+                  ${staffCount} personelin tamamına toplam <strong>${totalRequired} nöbet</strong> eksiksiz ve dengeli paylaştırıldı.
+                </div>
+              `;
+            } else if (diff > 0) {
+              elStatOptimalGuide.innerHTML = `
+                <div class="text-amber-800 font-bold">⚠️ ${diff} Nöbet Eksik Kaldı</div>
+                <div class="text-xs text-amber-950 mt-1">
+                  Tüm personele yazıldı ancak toplamda <strong>${diff} nöbet eksik</strong>. Personele +${diff} nöbet daha eklemelisiniz.
+                </div>
+              `;
+            } else {
+              elStatOptimalGuide.innerHTML = `
+                <div class="text-rose-800 font-bold">⚠️ ${Math.abs(diff)} Nöbet Fazla Yazıldı</div>
+                <div class="text-xs text-rose-950 mt-1">
+                  Gereken sayıdan <strong>${Math.abs(diff)} nöbet fazla</strong> yazıldı. Bazı personellerin nöbetini düşürünüz.
+                </div>
+              `;
+            }
+          }
+        } else {
+          // Hafta içi ve Hafta sonu ayrı kota rehberi
+          const totalWkReq = weekdayDays * peoplePerShift;
+          const totalWeReq = weekendDays * peoplePerShift;
+
+          let assignedWkSum = 0;
+          let assignedWeSum = 0;
+          let unassignedWkCount = 0;
+          let unassignedWeCount = 0;
+
+          state.staffList.forEach(p => {
+            if (p.isSetWk && p.targetWk !== '') assignedWkSum += (parseInt(p.targetWk) || 0);
+            else unassignedWkCount++;
+
+            if (p.isSetWe && p.targetWe !== '') assignedWeSum += (parseInt(p.targetWe) || 0);
+            else unassignedWeCount++;
+          });
+
+          const remWk = totalWkReq - assignedWkSum;
+          const remWe = totalWeReq - assignedWeSum;
+
+          function calcSplitText(remDuties, remCount) {
+            if (remCount === 0) return remDuties === 0 ? 'Tamamlandı' : `${remDuties > 0 ? remDuties + ' eksik' : Math.abs(remDuties) + ' fazla'}`;
+            if (remDuties <= 0) return 'Kalan personele 0 nöbet';
+            const b = Math.floor(remDuties / remCount);
+            const r = remDuties % remCount;
+            const o = remCount - r;
+            return r === 0 ? `${remCount} kişiye ${b} nöbet` : `${r} kişiye ${b + 1}, ${o} kişiye ${b} nöbet`;
+          }
+
+          elStatOptimalGuide.innerHTML = `
+            Toplam <strong>${totalRequired} nöbet</strong> (${totalWkReq} H.İçi, ${totalWeReq} H.Sonu):
+            <div class="mt-1.5 space-y-1 text-[11.5px] bg-white/70 p-2 rounded border border-teal-200">
+              <div>📅 <strong>Hafta İçi (Kalan ${remWk}):</strong> ${calcSplitText(remWk, unassignedWkCount)}</div>
+              <div>🏖️ <strong>Hafta Sonu (Kalan ${remWe}):</strong> ${calcSplitText(remWe, unassignedWeCount)}</div>
+            </div>
+          `;
+        }
+      }
+
+      // 2. MEVCUT KADRO DAĞILIMI DÖKÜMÜ (İsim-Kaç Nöbet Yazıldıkça Anlık Güncellenir)
+      if (elStatAssignedStaffRatio) {
+        elStatAssignedStaffRatio.textContent = `${assignedStaffCount}/${staffCount} personele yazıldı`;
+      }
+
+      if (elStatCurrentTally) {
+        if (staffCount === 0) {
+          elStatCurrentTally.innerHTML = '<span class="text-slate-400 italic">Personel listesi boş.</span>';
+        } else if (assignedStaffCount === 0) {
+          elStatCurrentTally.innerHTML = '<span class="text-slate-400 italic">Henüz hiçbir personele nöbet yazılmadı.</span>';
+        } else {
+          // Sayıları büyükten küçüğe sıralayarak rozetler halinde göster
+          const sortedTargets = Object.keys(targetCounts)
+            .map(Number)
+            .sort((a, b) => b - a);
+
+          let chipsHtml = '';
+          sortedTargets.forEach(targetVal => {
+            const count = targetCounts[targetVal];
+            chipsHtml += `
+              <span class="inline-flex items-center gap-1 bg-teal-50 text-teal-800 px-2 py-0.5 rounded text-[11px] font-medium border border-teal-200">
+                ${count} kişi: <strong>${targetVal} nöbet</strong>
+              </span>
+            `;
+          });
+
+          if (unassignedStaffCount > 0) {
+            chipsHtml += `
+              <span class="inline-flex items-center gap-1 bg-amber-50 text-amber-800 px-2 py-0.5 rounded text-[11px] font-medium border border-amber-200">
+                ${unassignedStaffCount} kişi: <strong>kalan</strong>
+              </span>
+            `;
+          }
+
+          elStatCurrentTally.innerHTML = chipsHtml;
+        }
+      }
+
+      // Detaylı gün analizi
+      if (elStatTotalDays) {
+        elStatTotalDays.textContent = `${totalDays} gün`;
+      }
+
+      if (elStatDayBreakdown) {
+        elStatDayBreakdown.textContent = `${weekdayDays} Hafta İçi / ${weekendDays} Hafta Sonu`;
+      }
+
+      if (elStatRequiredDuties) {
+        elStatRequiredDuties.textContent = `${totalRequired} görev`;
+      }
+
+      // Durum rozeti (Badge)
+      if (elStatStatusBadge) {
+        if (staffCount === 0) {
+          elStatStatusBadge.textContent = 'Personel Yok';
+          elStatStatusBadge.className = 'text-xs px-2.5 py-0.5 rounded-full font-semibold bg-slate-100 text-slate-600';
+        } else if (totalAssignedTarget === totalRequired && totalRequired > 0) {
+          elStatStatusBadge.textContent = 'Tam Dengede (Eşit)';
+          elStatStatusBadge.className = 'text-xs px-2.5 py-0.5 rounded-full font-semibold bg-emerald-100 text-emerald-800';
+        } else if (totalAssignedTarget < totalRequired) {
+          const diff = totalRequired - totalAssignedTarget;
+          elStatStatusBadge.textContent = `${diff} Nöbet Eksik`;
+          elStatStatusBadge.className = 'text-xs px-2.5 py-0.5 rounded-full font-semibold bg-amber-100 text-amber-800';
+        } else {
+          const diff = totalAssignedTarget - totalRequired;
+          elStatStatusBadge.textContent = `${diff} Nöbet Fazla`;
+          elStatStatusBadge.className = 'text-xs px-2.5 py-0.5 rounded-full font-semibold bg-rose-100 text-rose-800';
+        }
+      }
+    }
+
+    // --- PERSONEL TABLOSUNU ÇİZME (RENDER) ---
+    function renderStaffTable() {
+      // Hafta sonu ayrı belirle seçeneğine göre başlık sütunlarını ayarla
+      const totalHeaders = document.querySelectorAll('.target-col-total');
+      const splitHeaders = document.querySelectorAll('.target-col-split');
+
+      if (state.separateWeekend) {
+        totalHeaders.forEach(el => el.classList.add('hidden'));
+        splitHeaders.forEach(el => el.classList.remove('hidden'));
+      } else {
+        totalHeaders.forEach(el => el.classList.remove('hidden'));
+        splitHeaders.forEach(el => el.classList.add('hidden'));
+      }
+
+      elStaffTableBody.innerHTML = '';
+
+      // Boş liste uyarısını kontrol et
+      if (state.staffList.length === 0) {
+        elEmptyStaffMsg.classList.remove('hidden');
+      } else {
+        elEmptyStaffMsg.classList.add('hidden');
+      }
+
+      // Personel satırlarını ekle
+      state.staffList.forEach(person => {
+        // Hedef sayısı belirlenmişse, talep edilen gün sayısı hedef kotasını aşamaz
+        if (person.target !== '' && person.target !== undefined && person.target !== null) {
+          const numTarget = parseInt(person.target) || 0;
+          if (person.preferred && person.preferred.length > numTarget) {
+            person.preferred = person.preferred.slice(0, numTarget);
+          }
+        }
+
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50 transition border-b border-slate-100';
+
+        const excuseCount = person.excuses ? person.excuses.length : 0;
+        const preferredCount = person.preferred ? person.preferred.length : 0;
+
+        let badgeLabel = '+ İzin / Talep Belirle';
+        let badgeClass = 'bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200';
+
+        if (excuseCount > 0 && preferredCount > 0) {
+          badgeLabel = `🛡️ ${excuseCount} İzin | ⭐ ${preferredCount} Talep`;
+          badgeClass = 'bg-indigo-50 text-indigo-800 hover:bg-indigo-100 border border-indigo-200';
+        } else if (excuseCount > 0) {
+          badgeLabel = `🛡️ ${excuseCount} Gün İzin`;
+          badgeClass = 'bg-amber-100 text-amber-800 hover:bg-amber-200 border border-amber-300';
+        } else if (preferredCount > 0) {
+          badgeLabel = `⭐ ${preferredCount} Gün Nöbet`;
+          badgeClass = 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300';
+        }
+
+        let targetColumnsHtml = '';
+        if (state.separateWeekend) {
+          targetColumnsHtml = `
+            <td class="py-2.5 px-3 text-center target-col-split">
+              <input 
+                type="number" 
+                min="0" 
+                max="31" 
+                value="${person.targetWk !== '' && person.targetWk !== undefined && person.targetWk !== null ? person.targetWk : ''}" 
+                placeholder="0"
+                data-id="${person.id}" 
+                data-type="wk" 
+                class="input-staff-target-wk w-16 text-center border border-slate-200 rounded px-2 py-1 text-sm font-semibold focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none"
+              >
+            </td>
+            <td class="py-2.5 px-3 text-center target-col-split">
+              <input 
+                type="number" 
+                min="0" 
+                max="31" 
+                value="${person.targetWe !== '' && person.targetWe !== undefined && person.targetWe !== null ? person.targetWe : ''}" 
+                placeholder="0"
+                data-id="${person.id}" 
+                data-type="we" 
+                class="input-staff-target-we w-16 text-center border border-amber-200 bg-amber-50/40 text-amber-900 rounded px-2 py-1 text-sm font-semibold focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none"
+              >
+            </td>
+          `;
+        } else {
+          targetColumnsHtml = `
+            <td class="py-2.5 px-3 text-center target-col-total">
+              <input 
+                type="number" 
+                min="0" 
+                max="31" 
+                value="${person.target !== '' && person.target !== undefined && person.target !== null ? person.target : ''}" 
+                placeholder="0"
+                data-id="${person.id}" 
+                class="input-staff-target-total w-20 text-center border border-slate-200 rounded px-2 py-1 text-sm font-semibold focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none"
+              >
+            </td>
+          `;
+        }
+
+        tr.innerHTML = `
+          <td class="py-2.5 px-4 font-medium text-slate-800">
+            <div class="flex items-center gap-2.5">
+              <span class="w-7 h-7 rounded-full bg-teal-100 text-teal-800 flex items-center justify-center font-bold text-xs shrink-0 select-none">
+                ${person.name.trim().charAt(0).toUpperCase()}
+              </span>
+              <span class="font-medium text-slate-800 truncate max-w-[160px] sm:max-w-[200px]" title="${person.name}">
+                ${person.name}
+              </span>
+            </div>
+          </td>
+          ${targetColumnsHtml}
+          <td class="py-2.5 px-3 text-center">
+            <button 
+              type="button" 
+              data-id="${person.id}" 
+              class="btn-open-excuses text-xs font-semibold px-2.5 py-1 rounded-md transition ${badgeClass}"
+            >
+              ${badgeLabel}
+            </button>
+          </td>
+          <td class="py-2.5 px-4 text-right">
+            <button 
+              type="button" 
+              data-id="${person.id}" 
+              class="btn-delete-staff text-slate-400 hover:text-rose-600 p-1.5 rounded transition inline-flex items-center justify-center" 
+              title="Sil"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+              </svg>
+            </button>
+          </td>
+        `;
+
+        elStaffTableBody.appendChild(tr);
+      });
+
+      // Tablo İçi Olay Dinleyicileri (Event Listeners)
+      // 1. Genel Hedef Nöbet Sayısı Değişimi
+      elStaffTableBody.querySelectorAll('.input-staff-target-total').forEach(input => {
+        input.addEventListener('input', (e) => {
+          const id = e.target.dataset.id;
+          const rawVal = e.target.value.trim();
+          const p = state.staffList.find(x => x.id === id);
+          if (p) {
+            if (rawVal === '') {
+              p.target = '';
+              p.isSet = false;
+            } else {
+              p.target = parseInt(rawVal) || 0;
+              p.isSet = true;
+
+              // Eğer personelin önceden seçilmiş talepleri yeni hedeften fazlaysa kırp ve rozeti anında güncelle
+              if (p.preferred && p.preferred.length > p.target) {
+                p.preferred = p.preferred.slice(0, p.target);
+                const badgeBtn = elStaffTableBody.querySelector(`.btn-open-excuses[data-id="${p.id}"]`);
+                if (badgeBtn) {
+                  const excCount = p.excuses ? p.excuses.length : 0;
+                  const prefCount = p.preferred.length;
+                  if (excCount > 0 && prefCount > 0) {
+                    badgeBtn.textContent = `🛡️ ${excCount} İzin | ⭐ ${prefCount} Talep`;
+                  } else if (prefCount > 0) {
+                    badgeBtn.textContent = `⭐ ${prefCount} Gün Nöbet`;
+                  } else if (excCount > 0) {
+                    badgeBtn.textContent = `🛡️ ${excCount} Gün İzin`;
+                  } else {
+                    badgeBtn.textContent = '+ İzin / Talep Belirle';
+                  }
+                }
+              }
+            }
+          }
+          updateStatistics();
+        });
+      });
+
+      // 2. Hafta İçi / Hafta Sonu Hedef Nöbet Değişimi
+      elStaffTableBody.querySelectorAll('.input-staff-target-wk').forEach(input => {
+        input.addEventListener('input', (e) => {
+          const id = e.target.dataset.id;
+          const rawVal = e.target.value.trim();
+          const p = state.staffList.find(x => x.id === id);
+          if (p) {
+            if (rawVal === '') {
+              p.targetWk = '';
+              p.isSetWk = false;
+            } else {
+              p.targetWk = parseInt(rawVal) || 0;
+              p.isSetWk = true;
+            }
+            p.target = (parseInt(p.targetWk) || 0) + (parseInt(p.targetWe) || 0);
+            p.isSet = p.isSetWk || p.isSetWe;
+          }
+          updateStatistics();
+        });
+      });
+
+      elStaffTableBody.querySelectorAll('.input-staff-target-we').forEach(input => {
+        input.addEventListener('input', (e) => {
+          const id = e.target.dataset.id;
+          const rawVal = e.target.value.trim();
+          const p = state.staffList.find(x => x.id === id);
+          if (p) {
+            if (rawVal === '') {
+              p.targetWe = '';
+              p.isSetWe = false;
+            } else {
+              p.targetWe = parseInt(rawVal) || 0;
+              p.isSetWe = true;
+            }
+            p.target = (parseInt(p.targetWk) || 0) + (parseInt(p.targetWe) || 0);
+            p.isSet = p.isSetWk || p.isSetWe;
+          }
+          updateStatistics();
+        });
+      });
+
+      // 3. Mazeret / İzin Modalı Açma Butonu
+      elStaffTableBody.querySelectorAll('.btn-open-excuses').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const id = e.currentTarget.dataset.id;
+          openExcuseModal(id);
+        });
+      });
+
+      // 4. Personel Silme Butonu
+      elStaffTableBody.querySelectorAll('.btn-delete-staff').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const id = e.currentTarget.dataset.id;
+          const staffMember = state.staffList.find(x => x.id === id);
+          state.staffList = state.staffList.filter(x => x.id !== id);
+          // Silinen personelle ilgili kuralları da temizle
+          state.pairRules = state.pairRules.filter(r => r.p1 !== id && r.p2 !== id);
+          renderStaffTable();
+          updateStatistics();
+          renderPairRulesUI();
+          showToast(`${staffMember ? staffMember.name : 'Personel'} silindi.`, 'info');
+        });
+      });
+
+      // Tablo her çizildiğinde istatistikleri, sayaçları ve kural seçim kutularını senkronize et
+      updateStatistics();
+      updatePairRuleSelectOptions();
+    }
+
+    // --- BİRLİKTE / AYRI NÖBET KURALLARI (PAIRING RULES) YÖNETİMİ ---
+    function updatePairRuleSelectOptions() {
+      if (!elSelectPairP1 || !elSelectPairP2) return;
+
+      const p1Val = elSelectPairP1.value;
+      const p2Val = elSelectPairP2.value;
+
+      elSelectPairP1.innerHTML = '<option value="">1. Personel Seçin</option>';
+      elSelectPairP2.innerHTML = '<option value="">2. Personel Seçin</option>';
+
+      state.staffList.forEach(p => {
+        const opt1 = document.createElement('option');
+        opt1.value = p.id;
+        opt1.textContent = p.name;
+        if (p.id === p1Val) opt1.selected = true;
+        elSelectPairP1.appendChild(opt1);
+
+        const opt2 = document.createElement('option');
+        opt2.value = p.id;
+        opt2.textContent = p.name;
+        if (p.id === p2Val) opt2.selected = true;
+        elSelectPairP2.appendChild(opt2);
+      });
+    }
+
+    function renderPairRulesUI() {
+      if (!elPairRulesList || !elPairRulesCountBadge) return;
+
+      elPairRulesCountBadge.textContent = `${state.pairRules.length} Kural`;
+
+      if (state.pairRules.length === 0) {
+        elPairRulesList.innerHTML = '<span class="text-xs text-slate-400 italic">Henüz özel kural eklenmedi.</span>';
+        return;
+      }
+
+      elPairRulesList.innerHTML = '';
+      state.pairRules.forEach(rule => {
+        const p1 = state.staffList.find(s => s.id === rule.p1);
+        const p2 = state.staffList.find(s => s.id === rule.p2);
+        if (!p1 || !p2) return;
+
+        const chip = document.createElement('div');
+        const isSep = rule.type === 'separate';
+
+        chip.className = `inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold border transition ${
+          isSep 
+            ? 'bg-rose-50 text-rose-800 border-rose-200' 
+            : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+        }`;
+
+        chip.innerHTML = `
+          <span>${isSep ? '🚫' : '🤝'}</span>
+          <span><strong>${p1.name}</strong> ile <strong>${p2.name}</strong> ${isSep ? 'birlikte tutamaz' : 'birlikte tutsun'}</span>
+          <button type="button" data-rule-id="${rule.id}" class="btn-remove-rule ml-1 text-slate-400 hover:text-rose-600 transition font-bold" title="Kuralı Sil">×</button>
+        `;
+
+        elPairRulesList.appendChild(chip);
+      });
+
+      elPairRulesList.querySelectorAll('.btn-remove-rule').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const ruleId = e.currentTarget.dataset.ruleId;
+          state.pairRules = state.pairRules.filter(r => r.id !== ruleId);
+          renderPairRulesUI();
+          showToast('Kural kaldırıldı.', 'info');
+        });
+      });
+    }
+
+    function addPairRule() {
+      const p1Id = elSelectPairP1.value;
+      const p2Id = elSelectPairP2.value;
+      const ruleType = elSelectPairType.value; // 'separate' | 'together'
+
+      if (!p1Id || !p2Id) {
+        showToast('Lütfen her iki personeli de seçiniz.', 'warning');
+        return;
+      }
+      if (p1Id === p2Id) {
+        showToast('Aynı personeli birbiriyle eşleştiremezsiniz.', 'warning');
+        return;
+      }
+
+      // Kural çakışması kontrolü
+      const existing = state.pairRules.find(r => 
+        (r.p1 === p1Id && r.p2 === p2Id) || (r.p1 === p2Id && r.p2 === p1Id)
+      );
+
+      if (existing) {
+        existing.type = ruleType;
+        renderPairRulesUI();
+        showToast('Mevcut kural güncellendi.', 'success');
+        return;
+      }
+
+      state.pairRules.push({
+        id: Date.now().toString(),
+        p1: p1Id,
+        p2: p2Id,
+        type: ruleType
+      });
+
+      renderPairRulesUI();
+      showToast('Nöbet kuralı başarıyla eklendi.', 'success');
+    }
+
+    // --- HEDEFLERİ OTOMATİK EŞİT DAĞIT (AUTO DISTRIBUTE) ---
+    function autoDistributeTargets() {
+      const staffCount = state.staffList.length;
+      if (staffCount === 0) return;
+
+      const days = getDaysBetween(state.startDate, state.endDate);
+      const totalDays = days.length;
+      const weekendDays = days.filter(d => d.isWeekend).length;
+      const weekdayDays = totalDays - weekendDays;
+      const peoplePerShift = parseInt(elPeoplePerShift.value) || 1;
+
+      if (!state.separateWeekend) {
+        const totalDuties = totalDays * peoplePerShift;
+        const base = Math.floor(totalDuties / staffCount);
+        const remainder = totalDuties % staffCount;
+
+        state.staffList.forEach((person, idx) => {
+          person.target = idx < remainder ? base + 1 : base;
+          person.isSet = true;
+        });
+      } else {
+        const totalWkDuties = weekdayDays * peoplePerShift;
+        const baseWk = Math.floor(totalWkDuties / staffCount);
+        const remWk = totalWkDuties % staffCount;
+
+        const totalWeDuties = weekendDays * peoplePerShift;
+        const baseWe = Math.floor(totalWeDuties / staffCount);
+        const remWe = totalWeDuties % staffCount;
+
+        state.staffList.forEach((person, idx) => {
+          person.targetWk = idx < remWk ? baseWk + 1 : baseWk;
+          person.targetWe = idx < remWe ? baseWe + 1 : baseWe;
+          person.target = person.targetWk + person.targetWe;
+          person.isSetWk = true;
+          person.isSetWe = true;
+          person.isSet = true;
+        });
+      }
+
+      renderStaffTable();
+      updateStatistics();
+      showToast('Nöbet hedefleri adil ve eşit şekilde dağıtıldı.', 'success');
+    }
+
+    // --- TÜM NÖBET HEDEFLERİNİ SIFIRLA / TEMİZLE ---
+    function clearAllTargets() {
+      state.staffList.forEach(p => {
+        p.target = '';
+        p.targetWk = '';
+        p.targetWe = '';
+        p.isSet = false;
+        p.isSetWk = false;
+        p.isSetWe = false;
+      });
+      renderStaffTable();
+      updateStatistics();
+      showToast('Nöbet sayıları sıfırlandı. Elle yazmaya başlayabilirsiniz.', 'info');
+    }
+
+    // --- MAZERET VE GÜN TERCİHİ MODALI KONTROLLERİ ---
+    // 24 saat kuralı ve dinlenme süresi kontrol fonksiyonu
+    function checkPreferredValidity(targetDateStr) {
+      const restDays = 1; // 24 saat nöbette ertesi gün daima istirahattir
+      const maxConsecutive = 1;
+      const targetTime = new Date(targetDateStr + 'T00:00:00').getTime();
+      const MS_PER_DAY = 86400000;
+
+      for (const pDate of state.tempPreferred) {
+        const pTime = new Date(pDate + 'T00:00:00').getTime();
+        const diff = Math.round(Math.abs(targetTime - pTime) / MS_PER_DAY);
+        
+        if (diff === 0) continue; // Aynı gün
+
+        // Üst üste nöbet kuralı kontrolü
+        if (diff === 1) {
+          return {
+            valid: false,
+            reason: `24 saat nöbet usulü gereği üst üste 2 gün nöbet tutulamaz! ${formatTRDate(pDate)} nöbetinin ertesi günü zorunlu istirahattir.`
+          };
+        }
+
+        // Nöbetler arası dinlenme (istirahat) süresi kontrolü
+        if (diff <= restDays) {
+          return {
+            valid: false,
+            reason: `24 saat usulünde nöbet ertesi günü dinlenilmelidir (${formatTRDate(pDate)} tarihine çok yakın).`
+          };
+        }
+      }
+      return { valid: true };
+    }
+
+    // 24 Saat Usulüne Göre Alınabilecek Maksimum İzin Sayısını Hesaplama
+    function getMaxAllowedExcuses(targetTotal, totalDays) {
+      if (!targetTotal || targetTotal <= 0) return totalDays;
+      // 24s nöbet için T nöbete en az (2 * T - 1) müsait gün gerekir
+      const minDaysNeeded = (2 * targetTotal) - 1;
+      return Math.max(0, totalDays - minDaysNeeded);
+    }
+
+    function setModalMode(mode) {
+      state.modalActiveMode = mode;
+      const days = getDaysBetween(state.startDate, state.endDate);
+      const totalDays = days.length;
+      const person = state.staffList.find(p => p.id === state.currentActiveModalStaffId);
+      const targetTotal = person && person.target !== '' ? (parseInt(person.target) || 0) : null;
+      const maxExcuses = targetTotal ? getMaxAllowedExcuses(targetTotal, totalDays) : totalDays;
+
+      if (mode === 'excuse') {
+        elBtnToolExcuse.className = 'flex-1 py-1.5 px-2.5 rounded-md bg-white text-rose-700 shadow-xs border border-rose-300 font-bold flex items-center justify-center gap-1.5 transition whitespace-nowrap text-xs';
+        elBtnToolPreferred.className = 'flex-1 py-1.5 px-2.5 rounded-md text-slate-600 hover:text-slate-800 flex items-center justify-center gap-1.5 transition font-semibold whitespace-nowrap text-xs';
+        if (targetTotal && targetTotal > 0) {
+          elModalModeHint.innerHTML = `Tıkladığınız günler <strong class="text-rose-700">İzinli</strong> olarak işaretlenir. <em>(${targetTotal} nöbet için maks. ${maxExcuses} gün izin verilebilir)</em>`;
+        } else {
+          elModalModeHint.innerHTML = 'Tıkladığınız günler <strong class="text-rose-700">İzinli (Tutamaz)</strong> olarak işaretlenir.';
+        }
+      } else {
+        elBtnToolExcuse.className = 'flex-1 py-1.5 px-2.5 rounded-md text-slate-600 hover:text-slate-800 flex items-center justify-center gap-1.5 transition font-semibold whitespace-nowrap text-xs';
+        elBtnToolPreferred.className = 'flex-1 py-1.5 px-2.5 rounded-md bg-white text-emerald-700 shadow-xs border border-emerald-300 font-bold flex items-center justify-center gap-1.5 transition whitespace-nowrap text-xs';
+        elModalModeHint.innerHTML = 'Tıkladığınız günler <strong class="text-emerald-700">Nöbet Tutmak İstiyor (Talep)</strong> olarak işaretlenir. <em>(24s usulü: Üst üste ve nöbet ertesi seçilemez)</em>';
+      }
+      renderModalDaysGrid();
+    }
+
+    function openExcuseModal(staffId) {
+      state.currentActiveModalStaffId = staffId;
+      const person = state.staffList.find(p => p.id === staffId);
+      if (!person) return;
+
+      const days = getDaysBetween(state.startDate, state.endDate);
+      const totalDays = days.length;
+      const targetTotal = (person.target !== '' && person.target !== undefined) ? (parseInt(person.target) || 0) : null;
+      elModalStaffName.textContent = `${person.name} - Gün Tercihleri ve İzinler`;
+      
+      const elSub = document.getElementById('modalStaffSubhead');
+      if (elSub) {
+        if (targetTotal !== null && targetTotal > 0) {
+          const maxExcuses = getMaxAllowedExcuses(targetTotal, totalDays);
+          const minDaysNeeded = (2 * targetTotal) - 1;
+          elSub.textContent = `Hedef: ${targetTotal} Nöbet | Maks. İzin Hakkı: ${maxExcuses} Gün (${targetTotal} nöbet için en az ${minDaysNeeded} gün serbest kalmalı)`;
+        } else {
+          elSub.textContent = `Hedef nöbet henüz girilmedi. Lütfen önce kaç nöbet tutacağını belirleyin.`;
+        }
+      }
+
+      state.tempExcuses = new Set(person.excuses || []);
+      state.tempPreferred = new Set(person.preferred || []);
+
+      setModalMode('excuse');
+      renderModalDaysGrid();
+      elExcuseModal.classList.remove('hidden');
+    }
+
+    function renderModalDaysGrid() {
+      elModalDaysGrid.innerHTML = '';
+      const days = getDaysBetween(state.startDate, state.endDate);
+      if (days.length === 0) return;
+
+      // Pazartesi'den başlayan 7 sütunlu takvim düzeni (Cumartesi ve Pazar en sağda: 6. ve 7. sütunlar)
+      const firstDay = days[0];
+      const firstDayObj = new Date(firstDay.dateStr + 'T00:00:00');
+      const jsDay = firstDayObj.getDay(); // 0: Pazar, 1: Pazartesi, ..., 6: Cumartesi
+      const leadingEmptyCount = (jsDay === 0 ? 6 : jsDay - 1);
+
+      // Ayın ilk gününden önceki gün boşlukları (placeholder - kompakt ve şık)
+      for (let i = 0; i < leadingEmptyCount; i++) {
+        const emptySlot = document.createElement('div');
+        emptySlot.className = 'h-11 sm:h-12 rounded-md bg-slate-50/50 border border-dashed border-slate-200/50 select-none';
+        elModalDaysGrid.appendChild(emptySlot);
+      }
+
+      days.forEach(day => {
+        const isExcuse = state.tempExcuses.has(day.dateStr);
+        const isPreferred = state.tempPreferred.has(day.dateStr);
+        
+        // 24 saat nöbet kuralı gereği dinlenme günlerini belirle
+        let isBlockedForPref = false;
+        let blockReason = '';
+        if (state.modalActiveMode === 'preferred' && !isPreferred) {
+          const check = checkPreferredValidity(day.dateStr);
+          if (!check.valid) {
+            isBlockedForPref = true;
+            blockReason = check.reason;
+          }
+        }
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+
+        let cardClass = '';
+        let badgeHtml = '';
+
+        const dayNum = parseInt(day.dateStr.split('-')[2], 10);
+        const dayFormatted = dayNum < 10 ? '0' + dayNum : '' + dayNum;
+
+        if (isExcuse) {
+          cardClass = 'bg-rose-50 border-rose-400 text-rose-900 font-semibold shadow-xs ring-1 ring-rose-400';
+          badgeHtml = '<span class="text-[9px] bg-rose-200 text-rose-900 font-bold px-1 py-0.2 rounded truncate leading-tight">🚫 İzin</span>';
+        } else if (isPreferred) {
+          cardClass = 'bg-emerald-50 border-emerald-400 text-emerald-900 font-semibold shadow-xs ring-1 ring-emerald-400';
+          badgeHtml = '<span class="text-[9px] bg-emerald-200 text-emerald-900 font-bold px-1 py-0.2 rounded truncate leading-tight">⭐ Nöbet</span>';
+        } else if (isBlockedForPref) {
+          // Nöbet ertesi dinlenme günü: pasif ve kilitli görünüm
+          cardClass = 'bg-slate-100 border-slate-200 text-slate-400 opacity-60 cursor-not-allowed';
+          badgeHtml = '<span class="text-[8px] bg-slate-200 text-slate-600 font-medium px-0.5 py-0.2 rounded truncate leading-tight">⛔ Dinlenme</span>';
+        } else {
+          cardClass = day.isWeekend 
+            ? 'bg-[#fff2cc]/75 border-amber-300 text-slate-800 hover:bg-[#fff2cc]' 
+            : 'bg-white border-slate-200 text-slate-800 hover:bg-slate-50 hover:border-slate-300';
+        }
+
+        btn.className = `h-11 sm:h-12 p-1 sm:p-1.5 rounded-md border text-left transition flex flex-col justify-between items-center sm:items-start select-none ${cardClass}`;
+
+        btn.innerHTML = `
+          <div class="flex items-center justify-between w-full leading-none">
+            <span class="text-xs sm:text-[13px] font-extrabold ${day.isWeekend ? 'text-amber-950' : 'text-slate-800'}">${dayFormatted}</span>
+            ${day.isWeekend && !isExcuse && !isPreferred && !isBlockedForPref ? `<span class="text-[9px] font-bold text-amber-800/80">${day.dayIndex === 6 ? 'Cmt' : 'Paz'}</span>` : ''}
+          </div>
+          <div class="w-full flex justify-center sm:justify-start overflow-hidden">
+            ${badgeHtml}
+          </div>
+        `;
+
+        btn.addEventListener('click', () => {
+          const activePerson = state.staffList.find(p => p.id === state.currentActiveModalStaffId);
+          const targetTotal = activePerson && activePerson.target !== '' ? (parseInt(activePerson.target) || 0) : null;
+          const totalDays = days.length;
+
+          if (state.modalActiveMode === 'excuse') {
+            if (state.tempExcuses.has(day.dateStr)) {
+              state.tempExcuses.delete(day.dateStr);
+            } else {
+              // İZİN SINIRI DENETİMİ (24 Saat Nöbet Fiziksel Kapasite Kuralı)
+              if (targetTotal !== null && targetTotal > 0) {
+                const maxExcuses = getMaxAllowedExcuses(targetTotal, totalDays);
+                const minDaysNeeded = (2 * targetTotal) - 1;
+
+                if (state.tempExcuses.size >= maxExcuses) {
+                  showToast(
+                    `İzin sınırı aşıldı! ${activePerson.name} personelinin ${targetTotal} nöbet tutabilmesi (ve 24s nöbet ertesi dinlenebilmesi) için en az ${minDaysNeeded} serbest güne ihtiyacı var. Bu ay en fazla ${maxExcuses} gün izin alabilir!`,
+                    'warning'
+                  );
+                  return;
+                }
+              }
+
+              state.tempExcuses.add(day.dateStr);
+              state.tempPreferred.delete(day.dateStr); // Bir gün hem izin hem tercih olamaz
+            }
+          } else {
+            if (state.tempPreferred.has(day.dateStr)) {
+              state.tempPreferred.delete(day.dateStr);
+            } else {
+              // 1. Hedef kontrolü: Hedef henüz girilmemişse nöbet talebi seçtirilemez
+              if (targetTotal === null || targetTotal <= 0) {
+                showToast('Nöbet talebi (⭐) seçebilmek için lütfen önce personelin "Kaç Nöbet?" sayısını girin.', 'warning');
+                return;
+              }
+
+              // 2. Kota sınırı kontrolü: Hedef nöbet sayısından (örn. 12) fazla gün seçilemez!
+              if (state.separateWeekend) {
+                const isWe = day.isWeekend;
+                const targetQuota = isWe ? (parseInt(activePerson.targetWe) || 0) : (parseInt(activePerson.targetWk) || 0);
+                const currentCount = Array.from(state.tempPreferred).filter(d => {
+                  const dObj = new Date(d + 'T00:00:00');
+                  const dayW = dObj.getDay();
+                  return isWe ? (dayW === 0 || dayW === 6) : (dayW !== 0 && dayW !== 6);
+                }).length;
+
+                if (currentCount >= targetQuota) {
+                  showToast(`Bu personel için hedeflenen ${isWe ? 'hafta sonu' : 'hafta içi'} nöbet kotası (${targetQuota}) doldu! Daha fazla seçemezsiniz.`, 'warning');
+                  return;
+                }
+              } else {
+                if (state.tempPreferred.size >= targetTotal) {
+                  showToast(`Hedef nöbet sınırına (${targetTotal}) ulaşıldı! ${activePerson.name} için hedeflenen ${targetTotal} nöbetten daha fazla talep seçemezsiniz.`, 'warning');
+                  return;
+                }
+              }
+
+              // 3. 24 saat kuralı ve dinlenme süresi kontrolü
+              const check = checkPreferredValidity(day.dateStr);
+              if (!check.valid) {
+                showToast(check.reason, 'warning');
+                return;
+              }
+              state.tempPreferred.add(day.dateStr);
+              state.tempExcuses.delete(day.dateStr);
+            }
+          }
+          renderModalDaysGrid();
+          updateModalCount();
+        });
+
+        elModalDaysGrid.appendChild(btn);
+      });
+
+      updateModalCount();
+    }
+
+    function updateModalCount() {
+      const excuseCount = state.tempExcuses.size;
+      const prefCount = state.tempPreferred.size;
+      const person = state.staffList.find(p => p.id === state.currentActiveModalStaffId);
+      const targetTotal = person && person.target !== '' ? (parseInt(person.target) || 0) : 0;
+      const days = getDaysBetween(state.startDate, state.endDate);
+      const totalDays = days.length;
+      const maxExcuses = targetTotal > 0 ? getMaxAllowedExcuses(targetTotal, totalDays) : totalDays;
+
+      if (targetTotal > 0) {
+        elModalSelectedCount.innerHTML = `
+          <span class="${excuseCount >= maxExcuses ? 'text-rose-700 font-bold' : 'text-slate-600'}">İzin: <strong>${excuseCount} / ${maxExcuses} gün</strong> (Kalan Hak: ${Math.max(0, maxExcuses - excuseCount)})</span> &bull; 
+          <span class="${prefCount === targetTotal ? 'text-emerald-700 font-bold' : 'text-slate-600'}">Nöbet Talebi: <strong>${prefCount} / ${targetTotal}</strong></span>
+        `;
+      } else {
+        elModalSelectedCount.innerHTML = `
+          <span><strong>${excuseCount}</strong> gün izinli</span> &bull; 
+          <span class="text-amber-700 font-medium">Nöbet Talebi: <strong>${prefCount}</strong> (Önce Kaç Nöbet belirleyin)</span>
+        `;
+      }
+    }
+
+    elCloseModalBtn.addEventListener('click', () => {
+      elExcuseModal.classList.add('hidden');
+    });
+
+    elSaveExcusesBtn.addEventListener('click', () => {
+      if (state.currentActiveModalStaffId) {
+        const person = state.staffList.find(p => p.id === state.currentActiveModalStaffId);
+        if (person) {
+          const targetTotal = person.target !== '' ? (parseInt(person.target) || 0) : null;
+          let prefArray = Array.from(state.tempPreferred);
+          // Ek güvenlik: Eğer talep sayısı hedefi aşıyorsa hedefe kırp
+          if (targetTotal !== null && targetTotal > 0 && prefArray.length > targetTotal) {
+            prefArray = prefArray.slice(0, targetTotal);
+          }
+          person.excuses = Array.from(state.tempExcuses);
+          person.preferred = prefArray;
+          showToast(`${person.name} için izin ve nöbet tercihleri kaydedildi.`, 'success');
+        }
+      }
+      elExcuseModal.classList.add('hidden');
+      renderStaffTable();
+    });
+
+    elBtnModalClearAll.addEventListener('click', () => {
+      state.tempExcuses.clear();
+      state.tempPreferred.clear();
+      renderModalDaysGrid();
+      updateModalCount();
+    });
+
+    elBtnToolExcuse.addEventListener('click', () => setModalMode('excuse'));
+    elBtnToolPreferred.addEventListener('click', () => setModalMode('preferred'));
+
+    // --- AKILLI NÖBET DAĞITIM MOTORU (SOLVER ALGORİTMASI) ---
+    function solveSchedule() {
+      const staffList = state.staffList;
+      if (staffList.length === 0) {
+        showToast('Nöbet listesi oluşturmak için en az bir personel eklemelisiniz!', 'warning');
+        return;
+      }
+
+      const days = getDaysBetween(state.startDate, state.endDate);
+      const peoplePerShift = parseInt(elPeoplePerShift.value) || 1;
+      const maxGap = parseInt(state.maxGapDays) || 4;
+      const maxConsecutive = 1; // 24s standardı
+      const restDays = 1;       // Nöbet ertesi izin standardı
+      const isSplit = state.separateWeekend;
+
+      // 100 çoklu simülasyon (Monte Carlo + Heuristic Scoring + Gap Penalty) ile kısıtları ve boşluk sınırını sağlayan planı bul
+      let bestResult = null;
+      let minUnassigned = Infinity;
+      let minVariance = Infinity;
+
+      for (let iteration = 0; iteration < 100; iteration++) {
+        // Her simülasyon için personel sayaçları kopyalanır
+        const simStaff = staffList.map(s => ({
+          id: s.id,
+          name: s.name,
+          targetTotal: s.target || 0,
+          targetWk: isSplit ? (s.targetWk || 0) : 0,
+          targetWe: isSplit ? (s.targetWe || 0) : 0,
+          assignedTotal: 0,
+          assignedWk: 0,
+          assignedWe: 0,
+          assignedDates: [],
+          lastDayIndex: -1, // Son atandığı günün indeksi
+          excuses: new Set(s.excuses || []),
+          preferred: new Set(s.preferred || [])
+        }));
+
+        const schedule = [];
+        let totalUnassigned = 0;
+
+        // Günleri sırayla ata
+        for (let dIdx = 0; dIdx < days.length; dIdx++) {
+          const day = days[dIdx];
+          const isWeekend = day.isWeekend;
+          const assignedToday = [];
+
+          // Bu güne kaç kişi lazım?
+          for (let slot = 0; slot < peoplePerShift; slot++) {
+            // Uygun adayları filtrele
+            const candidates = simStaff.filter(person => {
+              // 1. Aynı gün içinde 2 kez nöbete yazılamaz
+              if (assignedToday.includes(person.id)) return false;
+
+              // 2. Mazeret günü kısıtı
+              if (person.excuses.has(day.dateStr)) return false;
+
+              // 3. Üst üste maksimum nöbet kısıtı (24s: 1 gün)
+              let consecutiveCount = 0;
+              for (let lookback = 1; lookback <= maxConsecutive; lookback++) {
+                const prevD = dIdx - lookback;
+                if (prevD >= 0 && schedule[prevD] && schedule[prevD].assigned.some(a => a.id === person.id)) {
+                  consecutiveCount++;
+                } else {
+                  break;
+                }
+              }
+              if (consecutiveCount >= maxConsecutive) return false;
+
+              // 4. Nöbetler arası zorunlu izin (Dinlenme) kısıtı (Nöbet ertesi)
+              if (restDays > 0) {
+                for (let check = 1; check <= restDays; check++) {
+                  const checkD = dIdx - check;
+                  if (checkD >= 0 && schedule[checkD] && schedule[checkD].assigned.some(a => a.id === person.id)) {
+                    return false;
+                  }
+                }
+              }
+
+              // 5. AYRI NÖBET KURALI (SEPARATE)
+              const hasSeparationConflict = assignedToday.some(assignedId => {
+                return state.pairRules.some(r => 
+                  r.type === 'separate' && 
+                  ((r.p1 === person.id && r.p2 === assignedId) || (r.p2 === person.id && r.p1 === assignedId))
+                );
+              });
+              if (hasSeparationConflict) return false;
+
+              return true;
+            });
+
+            if (candidates.length === 0) {
+              totalUnassigned++;
+              continue;
+            }
+
+            // Adayları puanla
+            candidates.sort((a, b) => {
+              let scoreA = 0;
+              let scoreB = 0;
+
+              // Hedef nöbet kotası dolanları geriye it
+              if (a.assignedTotal >= a.targetTotal) scoreA -= 9000;
+              if (b.assignedTotal >= b.targetTotal) scoreB -= 9000;
+
+              // Nöbet tutmak istediği (talep edilen ⭐) günler için yüksek öncelik
+              if (a.preferred && a.preferred.has(day.dateStr)) scoreA += 500;
+              if (b.preferred && b.preferred.has(day.dateStr)) scoreB += 500;
+
+              // --- MAKSİMUM BOŞLUK (GAP) DENETİMİ VE EŞİT ARALIKLI DAĞITIM MOTORU ---
+              // Son nöbetten bu yana geçen gün sayısı (ya da ay başından beri beklediği gün)
+              const gapA = a.lastDayIndex !== -1 ? (dIdx - a.lastDayIndex - 1) : dIdx;
+              const gapB = b.lastDayIndex !== -1 ? (dIdx - b.lastDayIndex - 1) : dIdx;
+
+              // Belirlenen maksimum boşluk (örn: 4 gün) dolduysa veya aşıldıysa ACİL ÖNCELİK puanı ver
+              if (a.targetTotal > a.assignedTotal) {
+                if (gapA >= maxGap) {
+                  scoreA += 4500 + (gapA - maxGap) * 1500;
+                } else {
+                  scoreA += gapA * 80; // Dinlenme süresi uzadıkça adayın sırası öne çekilir, nöbetler aya eşit yayılır
+                }
+              }
+
+              if (b.targetTotal > b.assignedTotal) {
+                if (gapB >= maxGap) {
+                  scoreB += 4500 + (gapB - maxGap) * 1500;
+                } else {
+                  scoreB += gapB * 80;
+                }
+              }
+
+              // BİRLİKTE NÖBET KURALI (TOGETHER): Eşi bugün atanmışsa çok güçlü öncelik ver
+              const hasTogetherPartnerA = assignedToday.some(assignedId => {
+                return state.pairRules.some(r =>
+                  r.type === 'together' &&
+                  ((r.p1 === a.id && r.p2 === assignedId) || (r.p2 === a.id && r.p1 === assignedId))
+                );
+              });
+              if (hasTogetherPartnerA) scoreA += 2500;
+
+              const hasTogetherPartnerB = assignedToday.some(assignedId => {
+                return state.pairRules.some(r =>
+                  r.type === 'together' &&
+                  ((r.p1 === b.id && r.p2 === assignedId) || (r.p2 === b.id && r.p1 === assignedId))
+                );
+              });
+              if (hasTogetherPartnerB) scoreB += 2500;
+
+              // Eşi izinli olan günlerde birlikte tutamayacakları için cezalandır
+              const partnerRulesA = state.pairRules.filter(r => r.type === 'together' && (r.p1 === a.id || r.p2 === a.id));
+              partnerRulesA.forEach(r => {
+                const partnerId = r.p1 === a.id ? r.p2 : r.p1;
+                const partnerObj = simStaff.find(s => s.id === partnerId);
+                if (partnerObj && partnerObj.excuses.has(day.dateStr)) scoreA -= 400;
+              });
+
+              const partnerRulesB = state.pairRules.filter(r => r.type === 'together' && (r.p1 === b.id || r.p2 === b.id));
+              partnerRulesB.forEach(r => {
+                const partnerId = r.p1 === b.id ? r.p2 : r.p1;
+                const partnerObj = simStaff.find(s => s.id === partnerId);
+                if (partnerObj && partnerObj.excuses.has(day.dateStr)) scoreB -= 400;
+              });
+
+              if (isSplit) {
+                const deficitA = isWeekend ? (a.targetWe - a.assignedWe) : (a.targetWk - a.assignedWk);
+                const deficitB = isWeekend ? (b.targetWe - b.assignedWe) : (b.targetWk - b.assignedWk);
+                scoreA += deficitA * 10 - a.assignedTotal * 2;
+                scoreB += deficitB * 10 - b.assignedTotal * 2;
+              } else {
+                const deficitA = a.targetTotal - a.assignedTotal;
+                const deficitB = b.targetTotal - b.assignedTotal;
+                scoreA += deficitA * 10;
+                scoreB += deficitB * 10;
+              }
+
+              // Rastgelelik (farklı simülasyon yollarını aramak için)
+              scoreA += (Math.random() * 4 - 2);
+              scoreB += (Math.random() * 4 - 2);
+
+              return scoreB - scoreA;
+            });
+
+            const chosen = candidates[0];
+            assignedToday.push(chosen.id);
+
+            // Seçilen personelin sayaçlarını güncelle
+            chosen.assignedTotal++;
+            if (isWeekend) chosen.assignedWe++;
+            else chosen.assignedWk++;
+            chosen.assignedDates.push(day.dateStr);
+            chosen.lastDayIndex = dIdx;
+          }
+
+          schedule.push({
+            dateStr: day.dateStr,
+            dayName: day.dayName,
+            isWeekend: day.isWeekend,
+            slotsNeeded: peoplePerShift,
+            assigned: assignedToday.map(id => {
+              const p = staffList.find(s => s.id === id);
+              return { id: p.id, name: p.name };
+            })
+          });
+        }
+
+        // Hedef nöbet varyansı
+        let variance = simStaff.reduce((acc, p) => {
+          const diff = Math.abs(p.assignedTotal - (p.targetTotal || 0));
+          return acc + diff;
+        }, 0);
+
+        // Maksimum Boşluk Aşımı Cezası (Maksimum 4 günü aşan her gün için simülasyonu ağır cezalandır)
+        let gapViolations = 0;
+        simStaff.forEach(p => {
+          if (p.assignedDates.length > 1) {
+            for (let i = 1; i < p.assignedDates.length; i++) {
+              const d1 = new Date(p.assignedDates[i - 1] + 'T00:00:00').getTime();
+              const d2 = new Date(p.assignedDates[i] + 'T00:00:00').getTime();
+              const gap = Math.round((d2 - d1) / 86400000) - 1;
+              if (gap > maxGap) {
+                gapViolations += (gap - maxGap);
+              }
+            }
+          }
+        });
+        variance += gapViolations * 30;
+
+        // Birlikte tutma kurallarının başarısını simülasyon puanına yansıt
+        state.pairRules.forEach(rule => {
+          if (rule.type === 'together') {
+            schedule.forEach(d => {
+              const has1 = d.assigned.some(a => a.id === rule.p1);
+              const has2 = d.assigned.some(a => a.id === rule.p2);
+              if ((has1 && !has2) || (!has1 && has2)) {
+                variance += 4;
+              }
+            });
+          }
+        });
+
+        if (totalUnassigned < minUnassigned || (totalUnassigned === minUnassigned && variance < minVariance)) {
+          minUnassigned = totalUnassigned;
+          minVariance = variance;
+          bestResult = {
+            schedule,
+            staffSummary: simStaff,
+            totalUnassigned
+          };
+          if (totalUnassigned === 0 && gapViolations === 0 && variance === 0) break;
+        }
+      }
+
+      state.scheduleResult = bestResult;
+
+      // Nöbet günleri oluştuktan hemen sonra A, B, C çalışma alanlarını herkese eşit dağıt
+      balanceWorkstations(false);
+
+      renderScheduleOutput();
+      showToast(`Nöbet çizelgesi azami ${maxGap} gün boşluk kuralına uygun oluşturuldu!`, 'success');
+    }
+
+    // --- ÇALIŞMA ALANLARI (A, B, C...) EŞİTLEME VE DENGELEME MOTORU ---
+    function getStaffStationCounts() {
+      const slotsPerDay = parseInt(elPeoplePerShift.value) || 1;
+      const staffCounts = {};
+      state.staffList.forEach(p => {
+        staffCounts[p.id] = new Array(slotsPerDay).fill(0);
+      });
+
+      if (state.scheduleResult && state.scheduleResult.schedule) {
+        state.scheduleResult.schedule.forEach(day => {
+          day.assigned.forEach((person, slotIdx) => {
+            if (person && staffCounts[person.id] && slotIdx < slotsPerDay) {
+              staffCounts[person.id][slotIdx]++;
+            }
+          });
+        });
+      }
+      return staffCounts;
+    }
+
+    // Günleri değiştirmeden, o günkü nöbetçilerin A, B, C slotlarını matematiksel olarak en eşit hale getirir
+    function balanceWorkstations(notify = true) {
+      if (!state.scheduleResult || !state.scheduleResult.schedule) return;
+      const schedule = state.scheduleResult.schedule;
+      const slotsPerDay = parseInt(elPeoplePerShift.value) || 1;
+      if (slotsPerDay <= 1) return;
+
+      function getPermutations(arr) {
+        if (arr.length <= 1) return [arr];
+        const perms = [];
+        for (let i = 0; i < arr.length; i++) {
+          const rest = [...arr.slice(0, i), ...arr.slice(i + 1)];
+          for (const p of getPermutations(rest)) {
+            perms.push([arr[i], ...p]);
+          }
+        }
+        return perms;
+      }
+
+      // 6 optimizasyon geçişi ile varyansı minimuma indir
+      for (let pass = 0; pass < 6; pass++) {
+        const staffStationCounts = {};
+        state.staffList.forEach(p => {
+          staffStationCounts[p.id] = new Array(slotsPerDay).fill(0);
+        });
+
+        schedule.forEach(day => {
+          day.assigned.forEach((p, s) => {
+            if (p && staffStationCounts[p.id]) {
+              staffStationCounts[p.id][s]++;
+            }
+          });
+        });
+
+        schedule.forEach(day => {
+          const validPeople = day.assigned.filter(Boolean);
+          if (validPeople.length <= 1) return;
+
+          day.assigned.forEach((p, s) => {
+            if (p && staffStationCounts[p.id]) {
+              staffStationCounts[p.id][s]--;
+            }
+          });
+
+          const perms = getPermutations(validPeople);
+          let bestPerm = validPeople;
+          let minPenalty = Infinity;
+
+          perms.forEach(perm => {
+            let penalty = 0;
+            perm.forEach((p, s) => {
+              const currentCount = staffStationCounts[p.id] ? staffStationCounts[p.id][s] : 0;
+              // Karesel ceza: Sayılar (3,3,3) gibi dengelendikçe ceza en aza iner
+              penalty += Math.pow(currentCount + 1, 2);
+            });
+            if (penalty < minPenalty) {
+              minPenalty = penalty;
+              bestPerm = perm;
+            }
+          });
+
+          day.assigned = bestPerm;
+
+          day.assigned.forEach((p, s) => {
+            if (p && staffStationCounts[p.id]) {
+              staffStationCounts[p.id][s]++;
+            }
+          });
+        });
+      }
+
+      recalcLiveStatsFromSchedule();
+      renderRosterTableRows();
+      renderRosterStatsRows();
+
+      if (notify) {
+        showToast('A, B, C çalışma alanları tüm personele matematiksel olarak en eşit şekilde paylaştırıldı!', 'success');
+      }
+    }
+
+    // --- NÖBET SONUÇ ÇİZELGESİ VE İNTERAKTİF TABLO ÇIKTISI ---
+    function renderScheduleOutput() {
+      if (!state.scheduleResult) return;
+
+      elResultsSection.classList.remove('hidden');
+      elScheduleSubhead.textContent = `Dönem: ${formatTRDate(state.startDate)} - ${formatTRDate(state.endDate)} | Nöbet Başına: ${elPeoplePerShift.value} Kişi`;
+
+      // Resmi Başlıkları Güncelle
+      const titles = getOfficialPeriodTitle();
+      const elDispHospital = document.getElementById('displayHospitalName');
+      const elDispTitle = document.getElementById('displayPeriodUnitTitle');
+      if (elDispHospital) elDispHospital.textContent = titles.hospital;
+      if (elDispTitle) elDispTitle.textContent = titles.fullTitle;
+
+      // Boş kalan slot uyarısı
+      if (state.scheduleResult.totalUnassigned > 0) {
+        elUnassignedAlert.classList.remove('hidden');
+        document.getElementById('unassignedAlertText').textContent = 
+          `Kısıtlar (izin günleri ve dinlenme süreleri) nedeniyle toplam ${state.scheduleResult.totalUnassigned} adet nöbet pozisyonu boş kaldı. Aşağıdaki tablodan ilgili günlere manuel personel atayabilirsiniz.`;
+      } else {
+        elUnassignedAlert.classList.add('hidden');
+      }
+
+      // 1. Günlük Tablo Çizelgesi (Resmi A-B-C Formatı)
+      renderRosterTableRows();
+
+      // 2. İstatistik Raporu Tablosu
+      renderRosterStatsRows();
+
+      // Sonuçlara yumuşak kaydır
+      elResultsSection.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function renderRosterTableRows() {
+      const schedule = state.scheduleResult.schedule;
+      const slotsPerDay = parseInt(elPeoplePerShift.value) || 1;
+      const titles = getOfficialPeriodTitle();
+
+      // 1. THEAD: Sütun sayısına (A, B, C...) göre başlıkları milimetrik hizalayarak oluştur
+      const elThead = document.getElementById('rosterThead') || elRosterTableBody.parentElement.querySelector('thead');
+      if (elThead) {
+        let slotHeadersHtml = '';
+        for (let s = 0; s < slotsPerDay; s++) {
+          const letter = String.fromCharCode(65 + s); // A, B, C...
+          const isLast = (s === slotsPerDay - 1);
+          slotHeadersHtml += `<th class="py-2.5 px-4 ${isLast ? '' : 'border-r-2'} border-black font-black text-center text-xs sm:text-sm bg-white tracking-wider min-w-[190px]">${letter}</th>`;
+        }
+
+        elThead.innerHTML = `
+          <tr class="border-b-2 border-black text-xs sm:text-sm font-black uppercase tracking-wider bg-white">
+            <th class="py-2.5 px-1 w-11 min-w-[44px] border-r-2 border-black bg-white" title="Resmi Dönem Şeridi"></th>
+            <th class="py-2.5 px-3 w-32 min-w-[110px] border-r-2 border-black font-extrabold text-center">TARİH</th>
+            <th class="py-2.5 px-3 w-32 min-w-[110px] border-r-2 border-black font-extrabold text-center">GÜN</th>
+            ${slotHeadersHtml}
+          </tr>
+        `;
+      }
+
+      elRosterTableBody.innerHTML = '';
+
+      schedule.forEach((day, dayIndex) => {
+        const tr = document.createElement('tr');
+        // Fotoğraftaki orijinal sıcak Excel sarısı (#fff2cc)
+        const rowBgStyle = day.isWeekend ? 'background-color: #fff2cc;' : 'background-color: #ffffff;';
+        tr.style = `${rowBgStyle} border-bottom: 1.5px solid #000000;`;
+
+        // 1. Sütun: Yalnızca ilk satırda rowspan ile tüm günleri kapsayan sol dikey kurum/dönem şeridi
+        let verticalTd = '';
+        if (dayIndex === 0) {
+          verticalTd = `
+            <td rowspan="${schedule.length}" class="border-r-2 border-black bg-white p-2 align-middle text-center select-none" style="width: 44px; min-width: 44px;">
+              <div class="vertical-title text-black font-extrabold tracking-wider">
+                ${titles.fullTitle}
+              </div>
+            </td>
+          `;
+        }
+
+        // Tarih ve Gün Sütunları (Fotoğraftaki gibi: 1.10.2026 ve Perşembe)
+        const dateTd = `<td class="py-2.5 px-3 font-bold border-r-2 border-black text-center whitespace-nowrap">${formatOfficialDate(day.dateStr)}</td>`;
+        const dayTd = `<td class="py-2.5 px-3 font-bold border-r-2 border-black text-center whitespace-nowrap">${day.dayName}</td>`;
+
+        // Görevli Nöbetçi(ler) A, B, C Sütunları (İsimleri Asla Kesmeyen Geniş ve Ferah Hücreler)
+        let dutiesTd = '';
+        for (let s = 0; s < slotsPerDay; s++) {
+          const currentPerson = day.assigned[s] || null;
+          const isLast = (s === slotsPerDay - 1);
+          const borderClass = isLast ? '' : 'border-r-2 border-black';
+          
+          dutiesTd += `
+            <td class="p-1 ${borderClass} text-center align-middle">
+              <select 
+                data-day-idx="${dayIndex}" 
+                data-slot-idx="${s}" 
+                class="roster-cell-select ${currentPerson ? '' : '!bg-rose-100 !text-rose-800 font-bold !border-rose-400'}"
+                title="Değiştirmek için tıklayın"
+              >
+                <option value="" class="normal-case">-- ${currentPerson ? 'Boş Bırak' : 'Nöbetçi Seçin'} --</option>
+                ${state.staffList.map(person => {
+                  const isExcused = person.excuses && person.excuses.includes(day.dateStr);
+                  const isPreferred = person.preferred && person.preferred.includes(day.dateStr);
+                  const isSelected = currentPerson && currentPerson.id === person.id;
+                  let labelSuffix = '';
+                  if (isExcused) labelSuffix = ' 🚫';
+                  if (isPreferred) labelSuffix = ' ⭐';
+                  return `
+                    <option value="${person.id}" ${isSelected ? 'selected' : ''} class="${isExcused ? 'text-rose-600 font-semibold' : isPreferred ? 'text-emerald-700 font-bold' : ''}">
+                      ${person.name.toLocaleUpperCase('tr-TR')}${labelSuffix}
+                    </option>
+                  `;
+                }).join('')}
+              </select>
+            </td>
+          `;
+        }
+
+        tr.innerHTML = verticalTd + dateTd + dayTd + dutiesTd;
+        elRosterTableBody.appendChild(tr);
+      });
+
+      // İnteraktif manuel değişiklik dinleyicileri
+      elRosterTableBody.querySelectorAll('.roster-cell-select').forEach(sel => {
+        sel.addEventListener('change', (e) => {
+          const dayIdx = parseInt(e.target.dataset.dayIdx);
+          const slotIdx = parseInt(e.target.dataset.slotIdx);
+          const newStaffId = e.target.value;
+
+          const scheduleDay = state.scheduleResult.schedule[dayIdx];
+          if (newStaffId) {
+            const foundPerson = state.staffList.find(p => p.id === newStaffId);
+            scheduleDay.assigned[slotIdx] = { id: foundPerson.id, name: foundPerson.name };
+
+            // Manuel atamada kural ihlali kontrolü ve bilgilendirme
+            const otherAssigned = scheduleDay.assigned.filter((_, idx) => idx !== slotIdx).map(a => a?.id).filter(Boolean);
+            const conflictRule = state.pairRules.find(r => 
+              r.type === 'separate' && 
+              ((r.p1 === newStaffId && otherAssigned.includes(r.p2)) || (r.p2 === newStaffId && otherAssigned.includes(r.p1)))
+            );
+            if (conflictRule) {
+              const otherPerson = state.staffList.find(s => s.id === (conflictRule.p1 === newStaffId ? conflictRule.p2 : conflictRule.p1));
+              showToast(`⚠️ Uyarı: ${foundPerson.name} ile ${otherPerson ? otherPerson.name : ''} arasında "Birlikte Tutamaz" kuralı bulunmaktadır!`, 'warning');
+            }
+          } else {
+            scheduleDay.assigned.splice(slotIdx, 1);
+          }
+
+          // İstatistikleri ve tablo görsellerini senkronize güncelle
+          recalcLiveStatsFromSchedule();
+          renderRosterTableRows();
+          renderRosterStatsRows();
+        });
+      });
+    }
+
+    // Manuel düzenleme sonrası personellerin gerçekleşen nöbet sayılarını yeniden hesaplama
+    function recalcLiveStatsFromSchedule() {
+      const schedule = state.scheduleResult.schedule;
+      state.scheduleResult.staffSummary.forEach(s => {
+        s.assignedTotal = 0;
+        s.assignedWk = 0;
+        s.assignedWe = 0;
+      });
+
+      schedule.forEach(day => {
+        day.assigned.forEach(assignedPerson => {
+          if (!assignedPerson) return;
+          const target = state.scheduleResult.staffSummary.find(s => s.id === assignedPerson.id);
+          if (target) {
+            target.assignedTotal++;
+            if (day.isWeekend) target.assignedWe++;
+            else target.assignedWk++;
+          }
+        });
+      });
+    }
+
+    function renderRosterStatsRows() {
+      elStatsTableBody.innerHTML = '';
+      if (!state.scheduleResult) return;
+
+      const summary = state.scheduleResult.staffSummary;
+      const schedule = state.scheduleResult.schedule;
+      const slotsPerDay = parseInt(elPeoplePerShift.value) || 1;
+      const maxGapLimit = parseInt(state.maxGapDays) || 4;
+      const staffStationCounts = getStaffStationCounts();
+
+      // Thead'i sadeleştirilmiş ve Nöbet Günleri eklenmiş olarak oluştur
+      if (elStatsReportThead) {
+        elStatsReportThead.innerHTML = `
+          <tr class="bg-slate-50 text-slate-700 text-xs font-semibold uppercase tracking-wider border-b border-slate-200">
+            <th class="py-3 px-4 w-52">Personel Adı</th>
+            <th class="py-3 px-4">Nöbet Günleri</th>
+            <th class="py-3 px-4 text-center font-bold text-indigo-800 bg-indigo-50/50">Alan Dağılım Özeti</th>
+            <th class="py-3 px-4 text-center">Hafta İçi</th>
+            <th class="py-3 px-4 text-center">Hafta Sonu</th>
+          </tr>
+        `;
+      }
+
+      summary.forEach(person => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50 transition border-b border-slate-100';
+
+        // Personelin Nöbet Tuttuğu Günlerin Sıralı Numaraları (Örn: 1, 5, 7, 12, 13)
+        const assignedDays = [];
+        schedule.forEach(day => {
+          if (day.assigned.some(a => a && a.id === person.id)) {
+            const dayNum = parseInt(day.dateStr.split('-')[2], 10);
+            assignedDays.push(dayNum);
+          }
+        });
+        assignedDays.sort((a, b) => a - b);
+
+        // İki nöbet arasındaki maksimum boşluk analizi
+        let maxObservedGap = 0;
+        if (assignedDays.length > 1) {
+          for (let i = 1; i < assignedDays.length; i++) {
+            const gap = assignedDays[i] - assignedDays[i - 1] - 1;
+            if (gap > maxObservedGap) maxObservedGap = gap;
+          }
+        }
+
+        let gapInfoBadge = '';
+        if (assignedDays.length > 1) {
+          const isOver = maxObservedGap > maxGapLimit;
+          gapInfoBadge = `
+            <span class="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded ml-2 ${
+              isOver ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-slate-100 text-slate-600'
+            }" title="İki nöbet arasındaki en uzun boş gün süresi">
+              <span>💤 En çok ${maxObservedGap} gün ara</span>
+            </span>
+          `;
+        }
+
+        const daysText = assignedDays.length > 0 
+          ? `<span class="tracking-wide">${assignedDays.join(', ')}</span> ${gapInfoBadge}` 
+          : '<span class="text-slate-400 italic">Nöbet yok</span>';
+
+        // Personelin A, B, C alanlarındaki adetleri ve "3A • 3B • 3C" özeti
+        const stationCounts = staffStationCounts[person.id] || new Array(slotsPerDay).fill(0);
+        const summaryParts = [];
+        for (let s = 0; s < slotsPerDay; s++) {
+          const count = stationCounts[s];
+          const letter = String.fromCharCode(65 + s);
+          summaryParts.push(`${count}${letter}`);
+        }
+        const summaryBadge = `<span class="inline-flex items-center px-2.5 py-1 rounded-md font-extrabold text-xs bg-indigo-50 text-indigo-800 border border-indigo-200 tracking-wide">${summaryParts.join(' &bull; ')}</span>`;
+
+        tr.innerHTML = `
+          <td class="py-3 px-4 font-bold text-slate-800">${person.name.toLocaleUpperCase('tr-TR')}</td>
+          <td class="py-3 px-4 font-bold text-teal-900 text-xs sm:text-sm leading-relaxed">${daysText}</td>
+          <td class="py-3 px-4 text-center">${summaryBadge}</td>
+          <td class="py-3 px-4 text-center font-medium text-slate-700">${person.assignedWk}</td>
+          <td class="py-3 px-4 text-center font-medium text-slate-700">${person.assignedWe}</td>
+        `;
+
+        elStatsTableBody.appendChild(tr);
+      });
+    }
+
+    // --- GELİŞMİŞ EXCEL (.XLSX) DIŞA AKTARMA VE DERLİ TOPLU STİL MOTORU ---
+    // Sütun genişlikleri, satır yükseklikleri, kenarlıklar ve renkleri Excel standartlarında kusursuz uygular
+    function generateAndDownloadExcel(tableHtml, filename, sheetName = 'Nobet_Listesi', exportConfig = {}) {
+      const xlsxFilename = filename.endsWith('.xlsx') ? filename : filename.replace(/\.xls$/, '') + '.xlsx';
+
+      if (typeof XLSX !== 'undefined') {
+        const tempDiv = document.createElement('div');
+        tempDiv.style.position = 'fixed';
+        tempDiv.style.left = '-9999px';
+        tempDiv.style.top = '-9999px';
+        tempDiv.innerHTML = tableHtml;
+        document.body.appendChild(tempDiv);
+
+        try {
+          const table = tempDiv.querySelector('table');
+          const wb = XLSX.utils.table_to_book(table, { sheet: sheetName, raw: true });
+          const ws = wb.Sheets[sheetName];
+
+          if (ws && ws['!ref']) {
+            const range = XLSX.utils.decode_range(ws['!ref']);
+
+            // 1. Sütun Genişliklerini (Col Widths) Uygula (İsimlerin kesilmesini kesin önler)
+            if (exportConfig.colWidths) {
+              ws['!cols'] = exportConfig.colWidths;
+            }
+
+            // 2. Satır Yüksekliklerini (Row Heights) Uygula (Sıkışıklığı önler, ferah görünüm sağlar)
+            if (exportConfig.rowHeights) {
+              ws['!rows'] = exportConfig.rowHeights;
+            }
+
+            const thinBorder = {
+              top: { style: 'thin', color: { rgb: '000000' } },
+              bottom: { style: 'thin', color: { rgb: '000000' } },
+              left: { style: 'thin', color: { rgb: '000000' } },
+              right: { style: 'thin', color: { rgb: '000000' } }
+            };
+
+            // Tüm hücreleri gezerek eksiksiz biçimlendir
+            for (let R = range.s.r; R <= range.e.r; ++R) {
+              for (let C = range.s.c; C <= range.e.c; ++C) {
+                const cellAddr = XLSX.utils.encode_cell({ r: R, c: C });
+                
+                // Boş hücreleri nesne olarak oluştur ki kenarlık ve arka plan rengi uygulanabilsin
+                if (!ws[cellAddr]) {
+                  ws[cellAddr] = { t: 's', v: '' };
+                }
+                const cell = ws[cellAddr];
+
+                if (!cell.s) cell.s = {};
+                cell.s.font = cell.s.font || { name: 'Calibri', sz: 10.5 };
+                cell.s.alignment = cell.s.alignment || { vertical: 'center', horizontal: 'center' };
+
+                // Üst T.C. ve Resmi Kurum Başlık Satırları
+                if (R < 4) {
+                  cell.s.font = { name: 'Calibri', sz: 11, bold: true, color: { rgb: '000000' } };
+                  cell.s.alignment = { vertical: 'center', horizontal: 'center' };
+                  continue;
+                }
+
+                // Normal Liste Özel Biçimlendirmeleri
+                if (exportConfig.type === 'normal') {
+                  if (R === 4) {
+                    // Başlık satırı (Tarih, Gün, A, B, C)
+                    cell.s.fill = { fgColor: { rgb: 'F1F5F9' } };
+                    cell.s.font = { name: 'Calibri', sz: 11, bold: true, color: { rgb: '000000' } };
+                    cell.s.border = thinBorder;
+                  } else if (R >= 5 && R < 5 + (exportConfig.rowCount || 0)) {
+                    const isWeekend = exportConfig.weekendRowIndices && exportConfig.weekendRowIndices.has(R);
+                    const isVerticalCol = (C === 0);
+
+                    if (isVerticalCol) {
+                      cell.s.font = { name: 'Calibri', sz: 10, bold: true };
+                      cell.s.alignment = { vertical: 'center', horizontal: 'center', textRotation: 90, wrapText: true };
+                      cell.s.border = thinBorder;
+                    } else {
+                      cell.s.fill = isWeekend ? { fgColor: { rgb: 'FFF2CC' } } : { fgColor: { rgb: 'FFFFFF' } };
+                      cell.s.font = { name: 'Calibri', sz: 11, bold: true, color: { rgb: '000000' } };
+                      cell.s.alignment = { vertical: 'center', horizontal: 'center' };
+                      cell.s.border = thinBorder;
+                    }
+                  }
+                }
+
+                // Puantaj Cetveli Özel Biçimlendirmeleri
+                if (exportConfig.type === 'puantaj') {
+                  if (R === 4) {
+                    // Kısaltmalar satırı
+                    cell.s.font = { name: 'Calibri', sz: 9.5, italic: true };
+                    cell.s.alignment = { vertical: 'center', horizontal: 'left' };
+                    continue;
+                  }
+
+                  // Başlık Satırları (Gün Numaraları ve Gün Kısaltmaları)
+                  if (R === 5 || R === 6) {
+                    const isWeCol = exportConfig.weekendColIndices && exportConfig.weekendColIndices.has(C);
+                    if (C === 0 || C === 1) {
+                      cell.s.fill = { fgColor: { rgb: '00897B' } };
+                      cell.s.font = { name: 'Calibri', sz: 10, bold: true, color: { rgb: 'FFFFFF' } };
+                    } else if (isWeCol) {
+                      cell.s.fill = { fgColor: { rgb: 'FFF2CC' } };
+                      cell.s.font = { name: 'Calibri', sz: 10, bold: true, color: { rgb: '000000' } };
+                    } else if (C >= 2 && C < 2 + (exportConfig.totalDays || 0)) {
+                      cell.s.fill = R === 5 ? { fgColor: { rgb: '00897B' } } : { fgColor: { rgb: 'E2E8F0' } };
+                      cell.s.font = { name: 'Calibri', sz: R === 5 ? 10 : 9, bold: true, color: R === 5 ? { rgb: 'FFFFFF' } : { rgb: '1E293B' } };
+                    } else {
+                      cell.s.fill = { fgColor: { rgb: '334155' } };
+                      cell.s.font = { name: 'Calibri', sz: 10, bold: true, color: { rgb: 'FFFFFF' } };
+                    }
+                    cell.s.border = thinBorder;
+                  }
+
+                  // Personel Satırları
+                  const staffStartRow = 7;
+                  const staffEndRow = staffStartRow + (exportConfig.staffCount || 0) - 1;
+
+                  if (R >= staffStartRow && R <= staffEndRow) {
+                    const isWeCol = exportConfig.weekendColIndices && exportConfig.weekendColIndices.has(C);
+                    const isDayCol = (C >= 2 && C < 2 + (exportConfig.totalDays || 0));
+
+                    cell.s.border = thinBorder;
+
+                    if (C === 0) {
+                      // S.No
+                      cell.s.font = { name: 'Calibri', sz: 10, bold: true };
+                      cell.s.alignment = { vertical: 'center', horizontal: 'center' };
+                    } else if (C === 1) {
+                      // Personel Adı Soyadı (Sola dayalı, ferah)
+                      cell.s.font = { name: 'Calibri', sz: 10.5, bold: true };
+                      cell.s.alignment = { vertical: 'center', horizontal: 'left' };
+                    } else if (isDayCol) {
+                      // Gün Hücreleri
+                      if (cell.v === '24') {
+                        cell.s.fill = { fgColor: { rgb: 'D1FAE5' } };
+                        cell.s.font = { name: 'Calibri', sz: 11, bold: true, color: { rgb: '065F46' } };
+                        cell.s.alignment = { vertical: 'center', horizontal: 'center' };
+                      } else if (cell.v === 'İ') {
+                        cell.s.fill = { fgColor: { rgb: 'FEE2E2' } };
+                        cell.s.font = { name: 'Calibri', sz: 10.5, bold: true, color: { rgb: '991B1B' } };
+                        cell.s.alignment = { vertical: 'center', horizontal: 'center' };
+                      } else {
+                        // Boş günler: Tire yok, hafta sonu ise sıcak pastel sarı!
+                        cell.s.fill = isWeCol ? { fgColor: { rgb: 'FFF2CC' } } : { fgColor: { rgb: 'FFFFFF' } };
+                        cell.s.alignment = { vertical: 'center', horizontal: 'center' };
+                      }
+                    } else {
+                      // İcmal sütunları (H.İçi, H.Sonu, Toplam)
+                      const isGrandTotal = (C === 2 + (exportConfig.totalDays || 0) + 2);
+                      cell.s.fill = isGrandTotal ? { fgColor: { rgb: 'E0F2F1' } } : { fgColor: { rgb: 'FFFFFF' } };
+                      cell.s.font = { name: 'Calibri', sz: 10.5, bold: true, color: isGrandTotal ? { rgb: '004D40' } : { rgb: '000000' } };
+                      cell.s.alignment = { vertical: 'center', horizontal: 'center' };
+                    }
+                  }
+
+                  // Günlük Nöbetçi Toplamı Satırı
+                  if (R === staffEndRow + 1) {
+                    cell.s.border = thinBorder;
+                    if (C === 0 || C === 1) {
+                      cell.s.fill = { fgColor: { rgb: '00897B' } };
+                      cell.s.font = { name: 'Calibri', sz: 10, bold: true, color: { rgb: 'FFFFFF' } };
+                      cell.s.alignment = { vertical: 'center', horizontal: 'left' };
+                    } else if (C === 2 + (exportConfig.totalDays || 0) + 2) {
+                      cell.s.fill = { fgColor: { rgb: '00897B' } };
+                      cell.s.font = { name: 'Calibri', sz: 11, bold: true, color: { rgb: 'FFFFFF' } };
+                      cell.s.alignment = { vertical: 'center', horizontal: 'center' };
+                    } else {
+                      cell.s.fill = { fgColor: { rgb: 'F1F5F9' } };
+                      cell.s.font = { name: 'Calibri', sz: 10.5, bold: true };
+                      cell.s.alignment = { vertical: 'center', horizontal: 'center' };
+                    }
+                  }
+                }
+              }
+            }
+          }
+
+          XLSX.writeFile(wb, xlsxFilename);
+          return;
+        } catch (err) {
+          console.error('XLSX oluşturma hatası:', err);
+        } finally {
+          document.body.removeChild(tempDiv);
+        }
+      }
+
+      // Standart indirme yedeği
+      const blob = new Blob([tableHtml], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = xlsxFilename;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 200);
+    }
+
+    // 1. FORMAT: NORMAL NÖBET LİSTESİ (Geniş Sütunlu, İsimleri Asla Kesmeyen Excel Çıktısı)
+    function exportExcelNormalList() {
+      if (!state.scheduleResult) {
+        showToast('Önce nöbet listesini oluşturmalısınız!', 'warning');
+        return;
+      }
+
+      const schedule = state.scheduleResult.schedule;
+      const slotsPerDay = parseInt(elPeoplePerShift.value) || 1;
+      const titles = getOfficialPeriodTitle();
+      const totalTableCols = 1 + 2 + slotsPerDay; // Yan Şerit + Tarih + Gün + A/B/C Slotları
+
+      // Sütun genişlikleri (Tarih, Gün ve A-B-C sütunları geniş tanımlanır)
+      const colWidths = [
+        { wch: 5 },  // Dikey Başlık Sütunu
+        { wch: 13 }, // Tarih Sütunu
+        { wch: 15 }, // Gün Sütunu
+      ];
+      for (let s = 0; s < slotsPerDay; s++) {
+        colWidths.push({ wch: 28 }); // A, B, C Nöbetçileri (İsimlerin kesilmesini önler!)
+      }
+
+      const rowHeights = [
+        { hpt: 18 }, // T.C.
+        { hpt: 18 }, // SAĞLIK BAKANLIĞI
+        { hpt: 20 }, // Hastane Adı
+        { hpt: 22 }, // Başlık
+        { hpt: 26 }, // Tablo Başlıkları
+      ];
+
+      const weekendRowIndices = new Set();
+
+      let html = `
+        <table style="border-collapse: collapse; font-family: Calibri, Arial, sans-serif;">
+          <tr>
+            <td colspan="${totalTableCols}" style="text-align: center; font-weight: bold; font-size: 11pt; border: none; padding: 2px;">T.C.</td>
+          </tr>
+          <tr>
+            <td colspan="${totalTableCols}" style="text-align: center; font-weight: bold; font-size: 11pt; border: none; padding: 2px;">SAĞLIK BAKANLIĞI</td>
+          </tr>
+          <tr>
+            <td colspan="${totalTableCols}" style="text-align: center; font-weight: bold; font-size: 11pt; border: none; padding: 2px;">${titles.hospital}</td>
+          </tr>
+          <tr>
+            <td colspan="${totalTableCols}" style="text-align: center; font-weight: bold; font-size: 11pt; border: none; padding: 4px 2px 12px 2px;">${titles.fullTitle}</td>
+          </tr>
+
+          <tr style="height: 28px;">
+            <th style="border: 1.5px solid #000000; width: 40px; background-color: #ffffff;"></th>
+            <th style="border: 1.5px solid #000000; font-weight: bold; text-align: center; font-size: 10.5pt; width: 95px; background-color: #f1f5f9;">Tarih</th>
+            <th style="border: 1.5px solid #000000; font-weight: bold; text-align: center; font-size: 10.5pt; width: 100px; background-color: #f1f5f9;">Gün</th>
+      `;
+
+      for (let s = 0; s < slotsPerDay; s++) {
+        const letter = String.fromCharCode(65 + s);
+        html += `<th style="border: 1.5px solid #000000; font-weight: bold; text-align: center; font-size: 10.5pt; width: 160px; background-color: #f1f5f9;">${letter}</th>`;
+      }
+      html += `</tr>`;
+
+      schedule.forEach((day, index) => {
+        const rowIndex = 5 + index;
+        rowHeights.push({ hpt: 22 });
+        if (day.isWeekend) {
+          weekendRowIndices.add(rowIndex);
+        }
+
+        const bgStyle = day.isWeekend ? 'background-color: #fff2cc;' : 'background-color: #ffffff;';
+        
+        html += `<tr style="${bgStyle} height: 24px;">`;
+
+        if (index === 0) {
+          html += `
+            <td rowspan="${schedule.length}" style="border: 1.5px solid #000000; mso-rotate: 90; writing-mode: vertical-rl; font-weight: bold; text-align: center; vertical-align: middle; font-size: 10.5pt; padding: 5px; width: 38px; background-color: #ffffff;">
+              ${titles.fullTitle}
+            </td>
+          `;
+        }
+
+        html += `
+            <td style="border: 1px solid #000000; text-align: center; font-size: 10pt; font-weight: bold;">${formatOfficialDate(day.dateStr)}</td>
+            <td style="border: 1px solid #000000; text-align: center; font-size: 10pt; font-weight: bold;">${day.dayName}</td>
+        `;
+
+        for (let s = 0; s < slotsPerDay; s++) {
+          const person = day.assigned[s];
+          if (person) {
+            const upperName = person.name.trim().toLocaleUpperCase('tr-TR');
+            html += `<td style="border: 1px solid #000000; text-align: center; font-weight: bold; font-size: 10.5pt;">${upperName}</td>`;
+          } else {
+            html += `<td style="border: 1px solid #000000; text-align: center; color: #b91c1c; font-style: italic;">Boş</td>`;
+          }
+        }
+
+        html += `</tr>`;
+      });
+
+      html += `</table><br/>`;
+
+      // Excel Altına Alan Dağılımı ve Personel İcmali Tablosu
+      const staffStationCounts = getStaffStationCounts();
+      html += `
+        <table style="border-collapse: collapse; font-family: Calibri, Arial, sans-serif; width: 100%;">
+          <tr>
+            <td colspan="${totalTableCols}" style="border: 1.5px solid #000000; background-color: #00897b; color: #ffffff; font-weight: bold; font-size: 10.5pt; padding: 5px; text-align: left;">
+              PERSONEL NÖBET GÜNLERİ VE ALAN DAĞILIM RAPORU
+            </td>
+          </tr>
+          <tr style="background-color: #f1f5f9; font-weight: bold; font-size: 9.5pt;">
+            <td style="border: 1px solid #000000; padding: 4px; text-align: left;" colspan="2">Personel Adı Soyadı</td>
+            <td style="border: 1px solid #000000; padding: 4px; text-align: left;" colspan="${Math.max(1, slotsPerDay - 1)}">Nöbet Günleri</td>
+            <td style="border: 1px solid #000000; text-align: center; padding: 4px;">Alan Dağılım Özeti</td>
+            <td style="border: 1px solid #000000; text-align: center; padding: 4px;">H.İçi / H.Sonu</td>
+          </tr>
+      `;
+
+      state.staffList.forEach(p => {
+        const counts = staffStationCounts[p.id] || new Array(slotsPerDay).fill(0);
+        const upperPName = p.name.trim().toLocaleUpperCase('tr-TR');
+        const sumParts = [];
+        for (let s = 0; s < slotsPerDay; s++) {
+          sumParts.push(`${counts[s]}${String.fromCharCode(65 + s)}`);
+        }
+
+        const assignedDays = [];
+        schedule.forEach(day => {
+          if (day.assigned.some(a => a && a.id === p.id)) {
+            assignedDays.push(parseInt(day.dateStr.split('-')[2], 10));
+          }
+        });
+        assignedDays.sort((a, b) => a - b);
+        const daysText = assignedDays.length > 0 ? assignedDays.join(', ') : '-';
+
+        const pStat = state.scheduleResult.staffSummary.find(s => s.id === p.id) || { assignedWk: 0, assignedWe: 0 };
+
+        html += `
+          <tr style="font-size: 9.5pt;">
+            <td style="border: 1px solid #000000; text-align: left; font-weight: bold; padding-left: 4px;" colspan="2">${upperPName}</td>
+            <td style="border: 1px solid #000000; text-align: left; padding-left: 4px; font-weight: bold; color: #004d40;" colspan="${Math.max(1, slotsPerDay - 1)}">${daysText}</td>
+            <td style="border: 1px solid #000000; text-align: center; font-weight: bold; background-color: #e0e7ff; color: #3730a3;">${sumParts.join(' - ')}</td>
+            <td style="border: 1px solid #000000; text-align: center; font-weight: bold; background-color: #f8fafc;">${pStat.assignedWk} H.İçi / ${pStat.assignedWe} H.Sonu</td>
+          </tr>
+        `;
+      });
+
+      html += `</table><br/>`;
+
+      html += `
+        <table style="border-collapse: collapse; font-family: Calibri, Arial, sans-serif; width: 100%;">
+          <tr>
+            <td colspan="${Math.floor(totalTableCols / 3)}" style="border:none; text-align:center; font-weight:bold; height:60px; vertical-align:top; font-size:10pt;">
+              Düzenleyen<br/><br/><br/>Nöbet Sorumlusu
+            </td>
+            <td colspan="${Math.floor(totalTableCols / 3)}" style="border:none; text-align:center; font-weight:bold; height:60px; vertical-align:top; font-size:10pt;">
+              Kontrol Eden<br/><br/><br/>Birim Sorumlusu
+            </td>
+            <td colspan="${totalTableCols - 2 * Math.floor(totalTableCols / 3)}" style="border:none; text-align:center; font-weight:bold; height:60px; vertical-align:top; font-size:10pt;">
+              Onaylayan<br/><br/><br/>Başhekim / Kurum Amiri
+            </td>
+          </tr>
+        </table>
+      `;
+
+      generateAndDownloadExcel(html, `Nobet_Listesi_${state.startDate}_${state.endDate}.xlsx`, 'Nobet_Listesi', {
+        type: 'normal',
+        colWidths: colWidths,
+        rowHeights: rowHeights,
+        rowCount: schedule.length,
+        weekendRowIndices: weekendRowIndices
+      });
+      showToast('Resmi formatlı nöbet listesi Excel (.xlsx) olarak indirildi.', 'success');
+    }
+
+    // 2. FORMAT: RESMİ KURUM PUANTAJ CETVELİ (Derli Toplu, Boş Günlerde Tire Yok, Hafta Sonu Sarı Şeritli)
+    function exportExcelPuantaj() {
+      if (!state.scheduleResult) {
+        showToast('Önce nöbet listesini oluşturmalısınız!', 'warning');
+        return;
+      }
+
+      const schedule = state.scheduleResult.schedule;
+      const days = getDaysBetween(state.startDate, state.endDate);
+      const totalDays = days.length;
+      const staffList = state.staffList;
+      const staffCount = staffList.length;
+      const titles = getOfficialPeriodTitle();
+      const totalCols = 2 + totalDays + 3; // S.No + İsim + Günler + (H.İçi, H.Sonu, Toplam)
+
+      const colWidths = [
+        { wch: 6 },  // S.No
+        { wch: 28 }, // Personel Adı Soyadı (Geniş ve ferah)
+      ];
+      for (let i = 0; i < totalDays; i++) {
+        colWidths.push({ wch: 4.2 }); // Günler (Derli toplu ve karemsi)
+      }
+      colWidths.push({ wch: 7 }); // H.İçi
+      colWidths.push({ wch: 7 }); // H.Sonu
+      colWidths.push({ wch: 8 }); // Toplam
+
+      const rowHeights = [
+        { hpt: 18 }, // T.C.
+        { hpt: 18 }, // SAĞLIK BAKANLIĞI
+        { hpt: 20 }, // Hastane Adı
+        { hpt: 22 }, // Başlık
+        { hpt: 18 }, // Kısaltmalar
+        { hpt: 20 }, // Gün Numaraları (1..31)
+        { hpt: 18 }, // Gün Kısaltmaları (Pt, Sa...)
+      ];
+
+      for (let i = 0; i < staffCount; i++) {
+        rowHeights.push({ hpt: 21 }); // Personel satırları
+      }
+      rowHeights.push({ hpt: 22 }); // Günlük Toplam satırı
+
+      const weekendColIndices = new Set();
+      days.forEach((d, idx) => {
+        if (d.isWeekend) {
+          weekendColIndices.add(2 + idx);
+        }
+      });
+
+      const dayShortNames = ['Pz', 'Pt', 'Sa', 'Ça', 'Pe', 'Cu', 'Ct'];
+
+      let html = `
+        <table style="border-collapse: collapse; font-family: Calibri, Arial, sans-serif;">
+          <tr>
+            <td colspan="${totalCols}" style="text-align: center; font-weight: bold; font-size: 11pt; border: none;">T.C.</td>
+          </tr>
+          <tr>
+            <td colspan="${totalCols}" style="text-align: center; font-weight: bold; font-size: 11pt; border: none;">SAĞLIK BAKANLIĞI</td>
+          </tr>
+          <tr>
+            <td colspan="${totalCols}" style="text-align: center; font-weight: bold; font-size: 11pt; border: none;">${titles.hospital}</td>
+          </tr>
+          <tr>
+            <td colspan="${totalCols}" style="text-align: center; font-weight: bold; font-size: 11pt; border: none;">${titles.fullTitle} AYLIK NÖBET PUANTAJ CETVELİ</td>
+          </tr>
+          <tr>
+            <td colspan="${totalCols}" style="text-align: left; font-size: 9.5pt; font-style: italic; border: none; padding-bottom: 4px;">
+              Kısaltmalar: &nbsp;&nbsp;<strong>[ 24 ]</strong> 24 Saat Nöbet &nbsp;&nbsp;&nbsp;&nbsp; <strong>[ İ ]</strong> Mazeret / İzin &nbsp;&nbsp;&nbsp;&nbsp; (Hafta sonları sarı renk ile belirtilmiştir)
+            </td>
+          </tr>
+
+          <!-- Satır 5: Gün Numaraları (1..31) -->
+          <tr style="height: 22px;">
+            <th style="border: 1px solid #000000; font-weight: bold; text-align: center;">S.No</th>
+            <th style="border: 1px solid #000000; font-weight: bold; text-align: left;">Personel Adı Soyadı</th>
+      `;
+
+      days.forEach((day) => {
+        const dayNum = parseInt(day.dateStr.split('-')[2], 10);
+        html += `<th style="border: 1px solid #000000; font-weight: bold; text-align: center;">${dayNum}</th>`;
+      });
+
+      html += `
+            <th style="border: 1px solid #000000; font-weight: bold; text-align: center;">H.İçi</th>
+            <th style="border: 1px solid #000000; font-weight: bold; text-align: center;">H.Sonu</th>
+            <th style="border: 1px solid #000000; font-weight: bold; text-align: center;">Toplam</th>
+          </tr>
+
+          <!-- Satır 6: Gün Kısaltmaları (Pt, Sa...) -->
+          <tr style="height: 20px;">
+            <th style="border: 1px solid #000000; text-align: center;"></th>
+            <th style="border: 1px solid #000000; font-weight: bold; text-align: left;">Gün</th>
+      `;
+
+      days.forEach((day) => {
+        const shortName = dayShortNames[day.dayIndex] || '';
+        html += `<th style="border: 1px solid #000000; font-weight: bold; text-align: center;">${shortName}</th>`;
+      });
+
+      html += `
+            <th style="border: 1px solid #000000; text-align: center;">(N)</th>
+            <th style="border: 1px solid #000000; text-align: center;">(N)</th>
+            <th style="border: 1px solid #000000; text-align: center;">(Top)</th>
+          </tr>
+      `;
+
+      // Satır 7+: Personeller
+      let totalWkDutiesSum = 0;
+      let totalWeDutiesSum = 0;
+      let grandDutiesSum = 0;
+
+      staffList.forEach((person, pIdx) => {
+        const upperName = person.name.trim().toLocaleUpperCase('tr-TR');
+        const pStat = state.scheduleResult.staffSummary.find(s => s.id === person.id) || { assignedWk: 0, assignedWe: 0, assignedTotal: 0 };
+        totalWkDutiesSum += pStat.assignedWk;
+        totalWeDutiesSum += pStat.assignedWe;
+        grandDutiesSum += pStat.assignedTotal;
+
+        html += `
+          <tr style="height: 22px;">
+            <td style="border: 1px solid #000000; text-align: center; font-weight: bold;">${pIdx + 1}</td>
+            <td style="border: 1px solid #000000; text-align: left; font-weight: bold; padding-left: 4px;">${upperName}</td>
+        `;
+
+        days.forEach((day, dIdx) => {
+          const isOnDuty = schedule[dIdx] && schedule[dIdx].assigned.some(a => a && a.id === person.id);
+          const isExcuse = person.excuses && person.excuses.includes(day.dateStr);
+
+          let cellVal = '';
+          if (isOnDuty) {
+            cellVal = '24';
+          } else if (isExcuse) {
+            cellVal = 'İ';
+          }
+
+          html += `<td style="border: 1px solid #000000; text-align: center;">${cellVal}</td>`;
+        });
+
+        html += `
+            <td style="border: 1px solid #000000; text-align: center; font-weight: bold;">${pStat.assignedWk}</td>
+            <td style="border: 1px solid #000000; text-align: center; font-weight: bold;">${pStat.assignedWe}</td>
+            <td style="border: 1px solid #000000; text-align: center; font-weight: bold;">${pStat.assignedTotal}</td>
+          </tr>
+        `;
+      });
+
+      // Günlük Nöbetçi Toplamı Satırı
+      html += `
+        <tr style="height: 24px; font-weight: bold;">
+          <td style="border: 1px solid #000000; text-align: center;"></td>
+          <td style="border: 1px solid #000000; text-align: left; padding-left: 4px;">GÜNLÜK NÖBETÇİ TOPLAMI</td>
+      `;
+
+      days.forEach((day, dIdx) => {
+        const count = schedule[dIdx] ? schedule[dIdx].assigned.filter(Boolean).length : 0;
+        html += `<td style="border: 1px solid #000000; text-align: center;">${count}</td>`;
+      });
+
+      html += `
+          <td style="border: 1px solid #000000; text-align: center;">${totalWkDutiesSum}</td>
+          <td style="border: 1px solid #000000; text-align: center;">${totalWeDutiesSum}</td>
+          <td style="border: 1px solid #000000; text-align: center;">${grandDutiesSum}</td>
+        </tr>
+      `;
+
+      html += `</table><br/>`;
+
+      // Resmi Onay İmzaları
+      html += `
+        <table style="border-collapse: collapse; font-family: Calibri, Arial, sans-serif; width: 100%;">
+          <tr>
+            <td colspan="${Math.floor(totalCols / 3)}" style="border:none; text-align:center; font-weight:bold; height:60px; vertical-align:top; font-size:10pt;">
+              Düzenleyen<br/><br/><br/>Nöbet Sorumlusu
+            </td>
+            <td colspan="${Math.floor(totalCols / 3)}" style="border:none; text-align:center; font-weight:bold; height:60px; vertical-align:top; font-size:10pt;">
+              Kontrol Eden<br/><br/><br/>Birim Sorumlusu
+            </td>
+            <td colspan="${totalCols - 2 * Math.floor(totalCols / 3)}" style="border:none; text-align:center; font-weight:bold; height:60px; vertical-align:top; font-size:10pt;">
+              Onaylayan<br/><br/><br/>Başhekim / Kurum Amiri
+            </td>
+          </tr>
+        </table>
+      `;
+
+      generateAndDownloadExcel(html, `Nobet_Puantaj_Cetveli_${state.startDate}_${state.endDate}.xlsx`, 'Puantaj_Cetveli', {
+        type: 'puantaj',
+        totalDays: totalDays,
+        staffCount: staffCount,
+        weekendColIndices: weekendColIndices,
+        colWidths: colWidths,
+        rowHeights: rowHeights
+      });
+      showToast('Resmi puantaj cetveli Excel (.xlsx) olarak indirildi.', 'success');
+    }
+
+    // Personel Listesini Türkçe Alfabetik (A-Z) Sıralama Fonksiyonu
+    function sortStaffAlphabetically() {
+      state.staffList.sort((a, b) => a.name.localeCompare(b.name, 'tr', { sensitivity: 'base' }));
+      renderStaffTable();
+      updateStatistics();
+      showToast('Personel listesi alfabetik (A-Z) olarak sıralandı.', 'info');
+    }
+
+    elAddStaffForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = elStaffNameInput.value.trim();
+      if (!name) return;
+
+      const newId = Date.now().toString();
+      state.staffList.push({
+        id: newId,
+        name: name.toLocaleUpperCase('tr-TR'),
+        target: '',
+        isSet: false,
+        targetWk: '',
+        targetWe: '',
+        excuses: [],
+        preferred: []
+      });
+
+      elStaffNameInput.value = '';
+      renderStaffTable();
+      updateStatistics();
+      showToast(`${name} listeye eklendi.`, 'success');
+    });
+
+    elBtnBulkSample.addEventListener('click', () => {
+      state.staffList = JSON.parse(JSON.stringify(SAMPLE_STAFF));
+      renderStaffTable();
+      updateStatistics();
+      showToast('Varsayılan personel kadrosu yüklendi.', 'info');
+    });
+
+    if (elBtnSortStaffAZ) {
+      elBtnSortStaffAZ.addEventListener('click', sortStaffAlphabetically);
+    }
+
+    if (elBtnAddPairRule) {
+      elBtnAddPairRule.addEventListener('click', addPairRule);
+    }
+
+    elStartDate.addEventListener('change', (e) => {
+      state.startDate = e.target.value;
+      updateStatistics();
+    });
+
+    elEndDate.addEventListener('change', (e) => {
+      state.endDate = e.target.value;
+      updateStatistics();
+    });
+
+    // Ay ve Yıl Seçimi Dinleyicileri
+    elSelectMonth.addEventListener('change', () => applyMonthYearSelection());
+    elSelectYear.addEventListener('change', () => applyMonthYearSelection());
+    elBtnModeMonthYear.addEventListener('click', () => setDateMode('monthYear'));
+    elBtnModeDateRange.addEventListener('click', () => setDateMode('dateRange'));
+
+    elPeoplePerShift.addEventListener('input', () => {
+      state.peoplePerShift = parseInt(elPeoplePerShift.value) || 1;
+      updateStatistics();
+    });
+
+    if (elMaxGapDays) {
+      elMaxGapDays.addEventListener('input', () => {
+        state.maxGapDays = parseInt(elMaxGapDays.value) || 4;
+      });
+    }
+
+    elSeparateWeekend.addEventListener('change', (e) => {
+      state.separateWeekend = e.target.checked;
+      renderStaffTable();
+      updateStatistics();
+    });
+
+    elBtnAutoDistribute.addEventListener('click', autoDistributeTargets);
+    elBtnClearTargets.addEventListener('click', clearAllTargets);
+    elBtnGenerateSchedule.addEventListener('click', solveSchedule);
+    elBtnExportNormalExcel.addEventListener('click', exportExcelNormalList);
+    elBtnExportPuantajExcel.addEventListener('click', exportExcelPuantaj);
+    elBtnBalanceWorkstations.addEventListener('click', () => balanceWorkstations(true));
+    elBtnStatsBalanceWorkstations.addEventListener('click', () => balanceWorkstations(true));
+
+    // Sekmeler (Günlük Tablo vs İstatistik)
+    elTabScheduleView.addEventListener('click', () => {
+      elScheduleTableView.classList.remove('hidden');
+      elScheduleStatsView.classList.add('hidden');
+      elTabScheduleView.className = 'px-3 py-1.5 text-xs font-semibold rounded-md bg-white shadow-xs text-slate-800';
+      elTabStatsView.className = 'px-3 py-1.5 text-xs font-semibold rounded-md text-slate-500 hover:text-slate-800';
+    });
+
+    elTabStatsView.addEventListener('click', () => {
+      elScheduleTableView.classList.add('hidden');
+      elScheduleStatsView.classList.remove('hidden');
+      elTabStatsView.className = 'px-3 py-1.5 text-xs font-semibold rounded-md bg-white shadow-xs text-slate-800';
+      elTabScheduleView.className = 'px-3 py-1.5 text-xs font-semibold rounded-md text-slate-500 hover:text-slate-800';
+    });
+
+    // --- SAYFA YÜKLENDİĞİNDE BAŞLAT ---
+    window.addEventListener('DOMContentLoaded', () => {
+      initDefaultDates();
+      renderStaffTable();
+      renderPairRulesUI();
+    });
+  </script>
+</body>
+</html>
