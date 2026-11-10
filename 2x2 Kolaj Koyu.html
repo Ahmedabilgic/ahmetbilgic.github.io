@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Kolaj Oluşturucu</title>
+  <title>2x2 Kolaj Oluşturucu</title>
   <style>
     :root {
       color-scheme: light dark;
@@ -49,30 +49,6 @@
       --drop-hover: #1e3a8a33;
     }
 
-    @media (prefers-color-scheme: dark) {
-      html:not([data-theme="light"]) {
-        color-scheme: dark;
-        --bg: #0b1220;
-        --card: #111827;
-        --text: #e5e7eb;
-        --muted: #9ca3af;
-        --border: #374151;
-        --accent: #60a5fa;
-        --input-bg: #1f2937;
-        --input-text: #f9fafb;
-        --secondary-bg: #374151;
-        --secondary-text: #f3f4f6;
-        --canvas-bg: #0f172a;
-        --soft-bg: #1f2937;
-        --preview-bg: #111827;
-        --overlay: rgba(0,0,0,0.7);
-        --shadow: 0 10px 30px rgba(0,0,0,0.35);
-        --modal-shadow: 0 20px 60px rgba(0,0,0,0.5);
-        --editor-outline: rgba(96,165,250,0.95);
-        --drop-hover: #1e3a8a33;
-      }
-    }
-
     * { box-sizing: border-box; }
 
     body {
@@ -95,12 +71,11 @@
       border-radius: 16px;
       padding: 20px;
       box-shadow: var(--shadow);
-      transition: background-color .2s ease, border-color .2s ease, box-shadow .2s ease;
     }
 
     h1 {
       margin: 0 0 8px;
-      font-size: 30px;
+      font-size: 28px;
     }
 
     p.desc {
@@ -122,88 +97,33 @@
       background: transparent;
       padding: 0;
       border-radius: 999px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: var(--shadow);
+      cursor: pointer;
     }
 
     .theme-toggle-track {
-      width: 68px;
-      height: 38px;
+      width: 64px;
+      height: 34px;
       border-radius: 999px;
-      background: linear-gradient(135deg, #0f172a, #1e293b);
-      padding: 4px;
-      position: relative;
-      transition: background .25s ease;
+      background: #1e293b;
+      padding: 3px;
       display: block;
+      position: relative;
     }
 
     .theme-toggle-thumb {
-      width: 30px;
-      height: 30px;
+      width: 28px;
+      height: 28px;
       border-radius: 50%;
-      background: linear-gradient(135deg, #ffffff, #e5e7eb);
+      background: #ffffff;
       display: flex;
       align-items: center;
       justify-content: center;
       transform: translateX(0);
-      transition: transform .25s ease, background .25s ease;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.18);
-      position: relative;
-      overflow: hidden;
-    }
-
-    html[data-theme="light"] .theme-toggle-track {
-      background: linear-gradient(135deg, #bfdbfe, #dbeafe);
+      transition: transform .2s ease;
     }
 
     html[data-theme="light"] .theme-toggle-thumb {
       transform: translateX(30px);
-      background: linear-gradient(135deg, #ffffff, #f8fafc);
-    }
-
-    html:not([data-theme="light"]) .theme-toggle-track {
-      background: linear-gradient(135deg, #0f172a, #1e293b);
-    }
-
-    @media (prefers-color-scheme: dark) {
-      html:not([data-theme="light"]) .theme-toggle-track {
-        background: linear-gradient(135deg, #0f172a, #1e293b);
-      }
-    }
-
-    .theme-icon {
-      position: absolute;
-      font-size: 14px;
-      line-height: 1;
-      transition: opacity .2s ease, transform .25s ease;
-      user-select: none;
-    }
-
-    .theme-icon-sun {
-      opacity: 0;
-      transform: translateY(8px) scale(0.75);
-    }
-
-    .theme-icon-moon {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-    }
-
-    html[data-theme="light"] .theme-icon-sun {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-    }
-
-    html[data-theme="light"] .theme-icon-moon {
-      opacity: 0;
-      transform: translateY(-8px) scale(0.75);
-    }
-
-    .theme-toggle:hover {
-      filter: none;
-      transform: translateY(-1px);
     }
 
     .controls {
@@ -216,37 +136,25 @@
     .field {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 6px;
     }
 
     .field label {
       font-weight: 600;
-      font-size: 14px;
+      font-size: 13px;
     }
 
     input[type="text"],
     input[type="number"],
-    input[type="file"],
     input[type="range"],
     select {
       width: 100%;
-      padding: 12px 14px;
+      padding: 10px 12px;
       border: 1px solid var(--border);
       border-radius: 10px;
       font: inherit;
       background: var(--input-bg);
       color: var(--input-text);
-    }
-
-    input[type="range"] {
-      padding: 0;
-    }
-
-    .files {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      margin-bottom: 20px;
     }
 
     .actions {
@@ -258,50 +166,46 @@
 
     button {
       border: 0;
-      border-radius: 12px;
-      padding: 12px 18px;
+      border-radius: 10px;
+      padding: 10px 16px;
       font: inherit;
       font-weight: 600;
       cursor: pointer;
-      transition: filter .2s ease, background-color .2s ease, color .2s ease;
+      transition: filter .15s ease;
     }
 
-    button:hover {
-      filter: brightness(1.03);
+    button:hover { filter: brightness(1.05); }
+
+    .primary { background: var(--accent); color: white; }
+    .secondary { background: var(--secondary-bg); color: var(--secondary-text); }
+
+    .ratio-btn {
+      padding: 8px 10px;
+      font-size: 13px;
+      border-radius: 8px;
     }
 
-    .primary {
+    .ratio-btn.active {
       background: var(--accent);
-      color: white;
+      color: #fff;
     }
 
-    .secondary {
-      background: var(--secondary-bg);
-      color: var(--secondary-text);
+    .btn-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
     }
 
     canvas {
       width: 100%;
-      max-width: 100%;
       background: var(--canvas-bg);
       border: 1px solid var(--border);
       border-radius: 16px;
       display: block;
-      transition: background-color .2s ease, border-color .2s ease;
-    }
-
-    .hint {
-      margin-top: 12px;
-      color: var(--muted);
-      font-size: 14px;
-      line-height: 1.5;
     }
 
     @media (max-width: 800px) {
-      .controls,
-      .files {
-        grid-template-columns: 1fr;
-      }
+      .controls { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -311,14 +215,11 @@
       <div class="topbar">
         <div>
           <h1>2x2 Kolaj Oluşturucu</h1>
-          <p class="desc">4 fotoğraf yükle, başlığı yaz, ardından kolajı oluştur ve JPG olarak indir.</p>
+          <p class="desc">4 fotoğraf yükleyin, kadrajı ve açıyı ayarlayıp kolajı oluşturun.</p>
         </div>
-        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Temayı değiştir" title="Temayı değiştir">
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Temayı değiştir">
           <span class="theme-toggle-track">
-            <span class="theme-toggle-thumb">
-              <span class="theme-icon theme-icon-sun">☀️</span>
-              <span class="theme-icon theme-icon-moon">🌙</span>
-            </span>
+            <span class="theme-toggle-thumb">🌙</span>
           </span>
         </button>
       </div>
@@ -330,12 +231,24 @@
         </div>
 
         <div class="field">
-          <label for="cornerRadius">Köşe yuvarlama</label>
+          <label for="aspectRatioSelect">Hücre Kadraj Oranı</label>
+          <select id="aspectRatioSelect">
+            <option value="1:1" selected>⬛ 1:1 Kare (Eşit Izgara)</option>
+            <option value="3:4">📱 3:4 Dikey (Standart Dikey)</option>
+            <option value="9:16">📱 9:16 Dikey (Uzun Telefon)</option>
+            <option value="4:3">🖥️ 4:3 Yatay (Standart Monitör)</option>
+            <option value="16:9">🎬 16:9 Yatay (Geniş Ekran)</option>
+            <option value="original">📐 Orijinal Fotoğraf Oranı</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="cornerRadius">Köşe yuvarlama (px)</label>
           <input id="cornerRadius" type="number" min="0" max="100" value="25" />
         </div>
 
         <div class="field">
-          <label for="targetWidthSelect">Çıktı çözünürlüğü</label>
+          <label for="targetWidthSelect">Çıktı çözünürlüğü (genişlik)</label>
           <select id="targetWidthSelect">
             <option value="900">900 px</option>
             <option value="1400" selected>1400 px</option>
@@ -353,14 +266,6 @@
         </div>
 
         <div class="field">
-          <label for="batchColumns">Toplu üretim sütun sayısı</label>
-          <select id="batchColumns">
-            <option value="2" selected>2 sütun</option>
-            <option value="1">1 sütun</option>
-          </select>
-        </div>
-
-        <div class="field">
           <label for="autoHeadline">Başlığa EXIF tarihi ekle</label>
           <select id="autoHeadline">
             <option value="off" selected>Kapalı</option>
@@ -369,53 +274,90 @@
         </div>
       </div>
 
-      <div id="dropZone" style="border:2px dashed var(--border); border-radius:14px; padding:30px; text-align:center; margin-bottom:20px; background:var(--soft-bg); transition:background-color .2s ease, border-color .2s ease;">
-        <strong>Fotoğrafları buraya sürükleyip bırak</strong><br>
-        <span style="color:var(--muted); font-size:14px;">4 fotoğrafı aynı anda sayfaya bırakabilirsin</span>
+      <div id="dropZone" style="border:2px dashed var(--border); border-radius:14px; padding:28px; text-align:center; margin-bottom:20px; background:var(--soft-bg);">
+        <strong>Fotoğrafları buraya sürükleyip bırakın</strong><br>
+        <span style="color:var(--muted); font-size:14px;">4 fotoğrafı aynı anda bırakabilirsiniz</span>
       </div>
 
       <div id="thumbGrid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px;"></div>
 
-      <div id="cropControls" style="display:none; border:1px solid var(--border); border-radius:14px; padding:16px; margin-bottom:20px; background:var(--card); transition:background-color .2s ease, border-color .2s ease;">
+      <div id="cropControls" style="display:none; border:1px solid var(--border); border-radius:14px; padding:16px; margin-bottom:20px; background:var(--card);">
         <div style="font-weight:700; margin-bottom:10px;">Seçili fotoğrafı düzenle</div>
-        <div style="display:flex; flex-wrap:wrap; gap:12px; margin-bottom:12px;">
+        <div style="display:flex; flex-wrap:wrap; gap:12px;">
           <button id="openEditorBtn" type="button" class="primary">Büyük Düzenleyicide Aç</button>
-          <button id="resetCropBtn" type="button" class="secondary">Kırpmayı Sıfırla</button>
+          <button id="resetCropBtn" type="button" class="secondary">Ayarları Sıfırla</button>
         </div>
-        <div style="color:var(--muted); font-size:14px;">Daha rahat çalışmak için büyük düzenleyiciyi aç. Orada fare tekerleği ile zoom yapabilir, görseli sürükleyebilir ve tam istediğin kadrajı ayarlayabilirsin.</div>
       </div>
 
-      <div id="editorModal" style="display:none; position:fixed; inset:0; background:var(--overlay); z-index:1000; align-items:center; justify-content:center; padding:24px; transition:background-color .2s ease;">
-        <div style="background:var(--card); color:var(--text); width:min(980px, 100%); border-radius:18px; padding:18px; box-shadow:var(--modal-shadow); transition:background-color .2s ease, color .2s ease;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; gap:12px;">
+      <!-- Büyük Düzenleyici Modalı -->
+      <div id="editorModal" style="display:none; position:fixed; inset:0; background:var(--overlay); z-index:1000; align-items:center; justify-content:center; padding:20px;">
+        <div style="background:var(--card); color:var(--text); width:min(1100px, 100%); border-radius:18px; padding:18px; box-shadow:var(--modal-shadow); max-height:94vh; display:flex; flex-direction:column;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
             <div>
-              <div style="font-weight:700; font-size:18px;">Fotoğraf Düzenleyici</div>
-              <div id="editorLabel" style="color:var(--muted); font-size:14px;">Seçili fotoğraf</div>
+              <div style="font-weight:700; font-size:18px;">Fotoğraf Kadraj & Açı Düzenleyici</div>
+              <div id="editorLabel" style="color:var(--muted); font-size:13px;">Seçili fotoğraf</div>
             </div>
             <button id="closeEditorBtn" type="button" class="secondary">Kapat</button>
           </div>
 
-          <div style="display:grid; grid-template-columns: 1fr 280px; gap:16px; align-items:start;">
-            <div>
-              <canvas id="editorCanvas" width="900" height="520" style="width:100%; background:var(--preview-bg); border:1px solid var(--border); border-radius:14px; display:block;"></canvas>
-              <div style="margin-top:10px; color:var(--muted); font-size:14px;">
-                Fare ile sürükle = konum değiştir • Mouse tekerleği = yakınlaştır/uzaklaştır • Çift tık = sıfırla
+          <div style="display:grid; grid-template-columns: 1fr 310px; gap:16px; align-items:start; overflow:hidden;">
+            <!-- Düzenleyici Tuval Alanı -->
+            <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; background:var(--preview-bg); padding:12px; border-radius:14px; min-height:500px;">
+              <canvas id="editorCanvas" style="background:#000; border:2px solid var(--editor-outline); border-radius:10px; display:block; max-width:100%; max-height:500px; object-fit:contain; cursor:grab;"></canvas>
+              <div style="margin-top:8px; color:var(--muted); font-size:13px;">
+                Fare ile sürükle = Konum • Tekerlek = Zoom • Kılavuz çizgileriyle ekranı hizala
               </div>
             </div>
 
-            <div style="border:1px solid var(--border); border-radius:14px; padding:14px; background:var(--soft-bg); transition:background-color .2s ease, border-color .2s ease;">
-              <div class="field" style="margin-bottom:12px;">
-                <label for="zoomRange">Yakınlaştırma</label>
+            <!-- Sağ Ayar Paneli -->
+            <div style="border:1px solid var(--border); border-radius:14px; padding:14px; background:var(--soft-bg); display:flex; flex-direction:column; gap:12px; max-height:500px; overflow-y:auto;">
+              
+              <div class="field">
+                <label>Kadraj Şekli</label>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px;">
+                  <button type="button" class="secondary ratio-btn" data-ratio="1:1">⬛ 1:1 Kare</button>
+                  <button type="button" class="secondary ratio-btn" data-ratio="3:4">📱 3:4 Dikey</button>
+                  <button type="button" class="secondary ratio-btn" data-ratio="4:3">🖥️ 4:3 Yatay</button>
+                  <button type="button" class="secondary ratio-btn" data-ratio="16:9">🎬 16:9 Geniş</button>
+                  <button type="button" class="secondary ratio-btn" data-ratio="original" style="grid-column: span 2;">📐 Orijinal Oran</button>
+                </div>
+              </div>
+
+              <!-- Eğrilik ve Döndürme Kontrolleri -->
+              <div class="field">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                  <label for="rotationRange">Eğrilik Düzeltme (Açı)</label>
+                  <span id="rotationValue" style="font-weight:700; font-size:13px; color:var(--accent);">0.0°</span>
+                </div>
+                <input id="rotationRange" type="range" min="-45" max="45" step="0.5" value="0" />
+                <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--muted); margin-top:-2px;">
+                  <span>-45°</span>
+                  <button type="button" id="resetAngleBtn" style="padding:2px 8px; font-size:11px;" class="secondary">Açıyı 0° Yap</button>
+                  <span>+45°</span>
+                </div>
+              </div>
+
+              <div class="field">
+                <label>90° Çevir</label>
+                <div class="btn-group">
+                  <button type="button" id="rotateLeftBtn" class="secondary">⟲ 90° Sola</button>
+                  <button type="button" id="rotateRightBtn" class="secondary">⟳ 90° Sağa</button>
+                </div>
+              </div>
+
+              <div class="field">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                  <label for="zoomRange">Yakınlaştırma (Zoom)</label>
+                  <span id="zoomValue" style="font-weight:700; font-size:13px; color:var(--accent);">1.0x</span>
+                </div>
                 <input id="zoomRange" type="range" min="1" max="4" step="0.01" value="1" />
               </div>
-              <div class="field" style="margin-bottom:12px;">
-                <label>Kısa Yol</label>
-                <div style="font-size:14px; color:var(--muted); line-height:1.5;">Mouse tekerleği ile daha hassas zoom yapabilirsin.</div>
-              </div>
-              <div style="display:flex; flex-direction:column; gap:10px;">
-                <button id="fitEditorBtn" type="button" class="secondary">Sığdır / Sıfırla</button>
+
+              <div style="display:flex; flex-direction:column; gap:8px; margin-top:6px;">
+                <button id="fitEditorBtn" type="button" class="secondary">Tüm Ayarları Sıfırla</button>
                 <button id="applyEditorBtn" type="button" class="primary">Kadrajı Uygula</button>
               </div>
+
             </div>
           </div>
         </div>
@@ -428,9 +370,6 @@
       </div>
 
       <canvas id="previewCanvas"></canvas>
-      <div class="hint">
-        Sistem 4 fotoğrafı 2x2 yerleştirir, mümkün olduğunca az kırpar, hafif yuvarlatılmış köşe uygular ve başlığı üstte ortalar. Küçük önizlemeleri sürükleyerek sıralamayı değiştirebilirsin.
-      </div>
     </div>
   </div>
 
@@ -440,14 +379,16 @@
     const targetWidthSelect = document.getElementById('targetWidthSelect');
     const exportFormatSelect = document.getElementById('exportFormat');
     const autoHeadlineSelect = document.getElementById('autoHeadline');
+    const aspectRatioSelect = document.getElementById('aspectRatioSelect');
+
     let droppedFiles = [];
     let cropStates = [];
     let dragIndex = null;
     let selectedIndex = null;
-    let cropDrag = null;
     let editorImage = null;
     let editorDrag = null;
     let tempCropState = null;
+
     const generateBtn = document.getElementById('generateBtn');
     const downloadBtn = document.getElementById('downloadBtn');
     const canvas = document.getElementById('previewCanvas');
@@ -461,6 +402,79 @@
       titleBandHeight: 70,
       background: '#ffffff'
     };
+
+    function createDefaultCrop() {
+      return {
+        zoom: 1,
+        fineAngle: 0,
+        rotate90: 0,
+        offsetX: 0,
+        offsetY: 0
+      };
+    }
+
+    function getTargetRatio(img) {
+      const mode = aspectRatioSelect.value;
+      if (mode === '1:1') return 1;
+      if (mode === '3:4') return 3 / 4;
+      if (mode === '9:16') return 9 / 16;
+      if (mode === '4:3') return 4 / 3;
+      if (mode === '16:9') return 16 / 9;
+      return img ? (img.width / img.height) : 1;
+    }
+
+    function loadImageFromFile(file) {
+      return new Promise((resolve, reject) => {
+        if (!file) return reject(new Error('Eksik dosya'));
+        const reader = new FileReader();
+        reader.onload = () => {
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.onerror = () => reject(new Error('Görsel yüklenemedi'));
+          img.src = reader.result;
+        };
+        reader.onerror = () => reject(new Error('Dosya okunamadı'));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function drawRoundedImage(ctx, img, x, y, w, h, radius, crop = null) {
+      ctx.save();
+      if (radius > 0) {
+        ctx.beginPath();
+        ctx.moveTo(x + radius, y);
+        ctx.lineTo(x + w - radius, y);
+        ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
+        ctx.lineTo(x + w, y + h - radius);
+        ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+        ctx.lineTo(x + radius, y + h);
+        ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
+        ctx.lineTo(x, y + radius);
+        ctx.quadraticCurveTo(x, y, x + radius, y);
+        ctx.closePath();
+        ctx.clip();
+      } else {
+        ctx.beginPath();
+        ctx.rect(x, y, w, h);
+        ctx.clip();
+      }
+
+      const cropZoom = Math.max(1, crop?.zoom || 1);
+      const totalAngle = ((crop?.rotate90 || 0) + (crop?.fineAngle || 0)) * Math.PI / 180;
+      const offX = (crop?.offsetX || 0) * w;
+      const offY = (crop?.offsetY || 0) * h;
+
+      ctx.translate(x + w / 2 + offX, y + h / 2 + offY);
+      ctx.rotate(totalAngle);
+
+      const baseScale = Math.max(w / img.width, h / img.height);
+      const totalScale = baseScale * cropZoom;
+      const drawW = img.width * totalScale;
+      const drawH = img.height * totalScale;
+
+      ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
+      ctx.restore();
+    }
 
     async function getExifDate(file) {
       try {
@@ -511,75 +525,24 @@
       return null;
     }
 
-    function loadImageFromFile(file) {
-      return new Promise((resolve, reject) => {
-        if (!file) {
-          reject(new Error('Eksik dosya'));
-          return;
-        }
-        const reader = new FileReader();
-        reader.onload = () => {
-          const img = new Image();
-          img.onload = () => resolve(img);
-          img.onerror = () => reject(new Error('Görsel yüklenemedi'));
-          img.src = reader.result;
-        };
-        reader.onerror = () => reject(new Error('Dosya okunamadı'));
-        reader.readAsDataURL(file);
-      });
-    }
-
-    function fitToWidth(img, targetWidth) {
-      const scale = targetWidth / img.width;
-      return {
-        width: targetWidth,
-        height: Math.round(img.height * scale)
-      };
-    }
-
-    function drawRoundedImage(ctx, img, x, y, w, h, radius, crop = null) {
-      ctx.save();
-      ctx.beginPath();
-      ctx.moveTo(x + radius, y);
-      ctx.lineTo(x + w - radius, y);
-      ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
-      ctx.lineTo(x + w, y + h - radius);
-      ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
-      ctx.lineTo(x + radius, y + h);
-      ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
-      ctx.lineTo(x, y + radius);
-      ctx.quadraticCurveTo(x, y, x + radius, y);
-      ctx.closePath();
-      ctx.clip();
-      if (!crop) {
-        ctx.drawImage(img, x, y, w, h);
-      } else {
-        const scale = crop.zoom;
-        const sw = img.width / scale;
-        const sh = img.height / scale;
-        const sx = Math.max(0, Math.min(img.width - sw, crop.x * (img.width - sw)));
-        const sy = Math.max(0, Math.min(img.height - sh, crop.y * (img.height - sh)));
-        ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
-      }
-      ctx.restore();
-    }
-
     async function generateCollage() {
       const files = droppedFiles;
       if (!files || files.length !== 4) {
-        alert('Lütfen sayfaya tam olarak 4 fotoğraf sürükleyip bırakın.');
+        alert('Lütfen sayfaya tam 4 fotoğraf yükleyin.');
         return;
       }
 
       try {
         config.targetWidth = Number(targetWidthSelect.value || 1400);
         const images = await Promise.all(files.map(loadImageFromFile));
-        const resized = images.map(img => ({ img, ...fitToWidth(img, config.targetWidth) }));
 
-        const row1Height = Math.max(resized[0].height, resized[1].height);
-        const row2Height = Math.max(resized[2].height, resized[3].height);
+        const cellWidth = config.targetWidth;
+        const ratios = images.map(img => getTargetRatio(img));
 
-        const canvasWidth = config.targetWidth * 2 + config.padding * 3;
+        const row1Height = Math.round(Math.max(cellWidth / ratios[0], cellWidth / ratios[1]));
+        const row2Height = Math.round(Math.max(cellWidth / ratios[2], cellWidth / ratios[3]));
+
+        const canvasWidth = cellWidth * 2 + config.padding * 3;
         const canvasHeight = row1Height + row2Height + config.padding * 3 + config.titleSpace;
 
         canvas.width = canvasWidth;
@@ -592,12 +555,12 @@
         const y1 = config.padding + config.titleSpace;
         const y2 = y1 + row1Height + config.padding;
         const x1 = config.padding;
-        const x2 = config.padding * 2 + config.targetWidth;
+        const x2 = config.padding * 2 + cellWidth;
 
-        drawRoundedImage(ctx, resized[0].img, x1, y1, resized[0].width, resized[0].height, radius, cropStates[0]);
-        drawRoundedImage(ctx, resized[1].img, x2, y1, resized[1].width, resized[1].height, radius, cropStates[1]);
-        drawRoundedImage(ctx, resized[2].img, x1, y2, resized[2].width, resized[2].height, radius, cropStates[2]);
-        drawRoundedImage(ctx, resized[3].img, x2, y2, resized[3].width, resized[3].height, radius, cropStates[3]);
+        drawRoundedImage(ctx, images[0], x1, y1, cellWidth, row1Height, radius, cropStates[0]);
+        drawRoundedImage(ctx, images[1], x2, y1, cellWidth, row1Height, radius, cropStates[1]);
+        drawRoundedImage(ctx, images[2], x1, y2, cellWidth, row2Height, radius, cropStates[2]);
+        drawRoundedImage(ctx, images[3], x2, y2, cellWidth, row2Height, radius, cropStates[3]);
 
         let title = titleInput.value.trim() || 'Başlıksız';
         if (autoHeadlineSelect.value === 'on') {
@@ -616,28 +579,9 @@
       }
     }
 
-    function downloadJpg() {
-      if (!canvas.width || !canvas.height) {
-        alert('Önce kolajı oluşturun.');
-        return;
-      }
-      const link = document.createElement('a');
-      const safeTitle = (titleInput.value.trim() || 'kolaj')
-        .toLowerCase()
-        .replace(/[^a-z0-9çğıöşü\s-]/gi, '')
-        .replace(/\s+/g, '_');
-      const format = exportFormatSelect.value;
-      link.download = `${safeTitle}.${format === 'png' ? 'png' : 'jpg'}`;
-      link.href = format === 'png'
-        ? canvas.toDataURL('image/png')
-        : canvas.toDataURL('image/jpeg', 1.0);
-      link.click();
-    }
-
     function renderThumbs() {
       const thumbGrid = document.getElementById('thumbGrid');
       thumbGrid.innerHTML = '';
-
       const labels = ['Fotoğraf 1 (sol üst)', 'Fotoğraf 2 (sağ üst)', 'Fotoğraf 3 (sol alt)', 'Fotoğraf 4 (sağ alt)'];
 
       droppedFiles.forEach((file, index) => {
@@ -656,26 +600,19 @@
         title.style.fontSize = '14px';
 
         const img = document.createElement('canvas');
-        img.width = 460;
-        img.height = 180;
         img.style.width = '100%';
-        img.style.height = '180px';
         img.style.borderRadius = '10px';
         img.style.display = 'block';
         img.style.marginBottom = '8px';
-        img.style.background = 'var(--preview-bg)';
 
         const pctx = img.getContext('2d');
         const previewImg = new Image();
         previewImg.onload = () => {
-          const crop = cropStates[index] || { zoom: 1, x: 0.5, y: 0.5 };
-          const scale = crop.zoom;
-          const sw = previewImg.width / scale;
-          const sh = previewImg.height / scale;
-          const sx = Math.max(0, Math.min(previewImg.width - sw, crop.x * (previewImg.width - sw)));
-          const sy = Math.max(0, Math.min(previewImg.height - sh, crop.y * (previewImg.height - sh)));
+          const ratio = getTargetRatio(previewImg);
+          img.width = 440;
+          img.height = Math.round(440 / ratio);
           pctx.clearRect(0, 0, img.width, img.height);
-          pctx.drawImage(previewImg, sx, sy, sw, sh, 0, 0, img.width, img.height);
+          drawRoundedImage(pctx, previewImg, 0, 0, img.width, img.height, 0, cropStates[index]);
         };
         previewImg.src = URL.createObjectURL(file);
 
@@ -683,7 +620,6 @@
         name.textContent = file.name;
         name.style.fontSize = '13px';
         name.style.color = 'var(--muted)';
-        name.style.wordBreak = 'break-all';
 
         card.appendChild(title);
         card.appendChild(img);
@@ -701,19 +637,9 @@
           openEditor();
         });
 
-        card.addEventListener('dragstart', () => {
-          dragIndex = index;
-        });
-
-        card.addEventListener('dragover', (e) => {
-          e.preventDefault();
-          card.style.background = 'var(--drop-hover)';
-        });
-
-        card.addEventListener('dragleave', () => {
-          card.style.background = 'var(--card)';
-        });
-
+        card.addEventListener('dragstart', () => { dragIndex = index; });
+        card.addEventListener('dragover', (e) => { e.preventDefault(); card.style.background = 'var(--drop-hover)'; });
+        card.addEventListener('dragleave', () => { card.style.background = 'var(--card)'; });
         card.addEventListener('drop', (e) => {
           e.preventDefault();
           card.style.background = 'var(--card)';
@@ -741,27 +667,73 @@
       cropControls.style.display = 'block';
     }
 
+    function updateEditorCanvasSize() {
+      if (!editorImage) return;
+      const editorCanvas = document.getElementById('editorCanvas');
+      const ratio = getTargetRatio(editorImage);
+      const maxW = 680;
+      const maxH = 480;
+      let w, h;
+      if (ratio >= maxW / maxH) {
+        w = maxW;
+        h = Math.round(maxW / ratio);
+      } else {
+        h = maxH;
+        w = Math.round(maxH * ratio);
+      }
+      editorCanvas.width = w;
+      editorCanvas.height = h;
+
+      document.querySelectorAll('.ratio-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.ratio === aspectRatioSelect.value);
+      });
+    }
+
+    function drawEditorGrid(ectx, w, h) {
+      ectx.save();
+      ectx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+      ectx.lineWidth = 1;
+      ectx.setLineDash([4, 4]);
+
+      ectx.beginPath();
+      // 3x3 Grid
+      ectx.moveTo(w / 3, 0);
+      ectx.lineTo(w / 3, h);
+      ectx.moveTo((2 * w) / 3, 0);
+      ectx.lineTo((2 * w) / 3, h);
+      ectx.moveTo(0, h / 3);
+      ectx.lineTo(w, h / 3);
+      ectx.moveTo(0, (2 * h) / 3);
+      ectx.lineTo(w, (2 * h) / 3);
+      ectx.stroke();
+
+      // Merkez kılavuz artısı
+      ectx.strokeStyle = 'rgba(96, 165, 250, 0.6)';
+      ectx.setLineDash([]);
+      ectx.beginPath();
+      ectx.moveTo(w / 2 - 14, h / 2);
+      ectx.lineTo(w / 2 + 14, h / 2);
+      ectx.moveTo(w / 2, h / 2 - 14);
+      ectx.lineTo(w / 2, h / 2 + 14);
+      ectx.stroke();
+
+      ectx.restore();
+    }
+
     function renderEditor() {
       const editorCanvas = document.getElementById('editorCanvas');
       const ectx = editorCanvas.getContext('2d');
       if (!editorImage || !tempCropState) return;
 
       ectx.clearRect(0, 0, editorCanvas.width, editorCanvas.height);
-      ectx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--preview-bg').trim() || '#f3f4f6';
-      ectx.fillRect(0, 0, editorCanvas.width, editorCanvas.height);
+      drawRoundedImage(ectx, editorImage, 0, 0, editorCanvas.width, editorCanvas.height, 0, tempCropState);
 
-      const crop = tempCropState;
-      const scale = crop.zoom;
-      const sw = editorImage.width / scale;
-      const sh = editorImage.height / scale;
-      const sx = Math.max(0, Math.min(editorImage.width - sw, crop.x * (editorImage.width - sw)));
-      const sy = Math.max(0, Math.min(editorImage.height - sh, crop.y * (editorImage.height - sh)));
+      // Hizalama ızgarasını çiz
+      drawEditorGrid(ectx, editorCanvas.width, editorCanvas.height);
 
-      ectx.drawImage(editorImage, sx, sy, sw, sh, 0, 0, editorCanvas.width, editorCanvas.height);
-
-      ectx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--editor-outline').trim() || 'rgba(37,99,235,0.9)';
-      ectx.lineWidth = 3;
-      ectx.strokeRect(1.5, 1.5, editorCanvas.width - 3, editorCanvas.height - 3);
+      // Değer göstergelerini güncelle
+      document.getElementById('rotationValue').textContent = `${(tempCropState.fineAngle >= 0 ? '+' : '')}${Number(tempCropState.fineAngle).toFixed(1)}°`;
+      document.getElementById('zoomValue').textContent = `${Number(tempCropState.zoom).toFixed(2)}x`;
     }
 
     function openEditor() {
@@ -769,20 +741,22 @@
       const modal = document.getElementById('editorModal');
       const label = document.getElementById('editorLabel');
       const zoomRange = document.getElementById('zoomRange');
+      const rotationRange = document.getElementById('rotationRange');
       const labels = ['Fotoğraf 1 (sol üst)', 'Fotoğraf 2 (sağ üst)', 'Fotoğraf 3 (sol alt)', 'Fotoğraf 4 (sağ alt)'];
 
       tempCropState = { ...cropStates[selectedIndex] };
       zoomRange.value = tempCropState.zoom;
+      rotationRange.value = tempCropState.fineAngle || 0;
       label.textContent = labels[selectedIndex];
 
       const file = droppedFiles[selectedIndex];
       const img = new Image();
       img.onload = () => {
         editorImage = img;
+        updateEditorCanvasSize();
         renderEditor();
       };
       img.src = URL.createObjectURL(file);
-
       modal.style.display = 'flex';
     }
 
@@ -793,21 +767,74 @@
       tempCropState = null;
     }
 
-    generateBtn.addEventListener('click', generateCollage);
+    document.querySelectorAll('.ratio-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        aspectRatioSelect.value = btn.dataset.ratio;
+        updateEditorCanvasSize();
+        renderEditor();
+      });
+    });
 
+    aspectRatioSelect.addEventListener('change', () => {
+      if (editorImage) {
+        updateEditorCanvasSize();
+        renderEditor();
+      }
+      if (droppedFiles.length) {
+        renderThumbs();
+        if (canvas.width) generateCollage();
+      }
+    });
+
+    // Açı & Döndürme Dinleyicileri
+    document.getElementById('rotationRange').addEventListener('input', (e) => {
+      if (!tempCropState) return;
+      tempCropState.fineAngle = Number(e.target.value);
+      renderEditor();
+    });
+
+    document.getElementById('resetAngleBtn').addEventListener('click', () => {
+      if (!tempCropState) return;
+      tempCropState.fineAngle = 0;
+      document.getElementById('rotationRange').value = 0;
+      renderEditor();
+    });
+
+    document.getElementById('rotateLeftBtn').addEventListener('click', () => {
+      if (!tempCropState) return;
+      tempCropState.rotate90 = (tempCropState.rotate90 - 90 + 360) % 360;
+      renderEditor();
+    });
+
+    document.getElementById('rotateRightBtn').addEventListener('click', () => {
+      if (!tempCropState) return;
+      tempCropState.rotate90 = (tempCropState.rotate90 + 90) % 360;
+      renderEditor();
+    });
+
+    // Zoom Dinleyicisi
+    document.getElementById('zoomRange').addEventListener('input', (e) => {
+      if (!tempCropState) return;
+      tempCropState.zoom = Number(e.target.value);
+      renderEditor();
+    });
+
+    // Buton Eylemleri
+    generateBtn.addEventListener('click', generateCollage);
     document.getElementById('openEditorBtn').addEventListener('click', openEditor);
     document.getElementById('closeEditorBtn').addEventListener('click', closeEditor);
 
     document.getElementById('resetCropBtn').addEventListener('click', () => {
       if (selectedIndex === null) return;
-      cropStates[selectedIndex] = { zoom: 1, x: 0.5, y: 0.5 };
+      cropStates[selectedIndex] = createDefaultCrop();
       renderThumbs();
     });
 
     document.getElementById('fitEditorBtn').addEventListener('click', () => {
       if (!tempCropState) return;
-      tempCropState = { zoom: 1, x: 0.5, y: 0.5 };
+      tempCropState = createDefaultCrop();
       document.getElementById('zoomRange').value = 1;
+      document.getElementById('rotationRange').value = 0;
       renderEditor();
     });
 
@@ -816,26 +843,26 @@
       cropStates[selectedIndex] = { ...tempCropState };
       renderThumbs();
       closeEditor();
+      if (canvas.width) generateCollage();
     });
 
-    document.getElementById('zoomRange').addEventListener('input', (e) => {
-      if (!tempCropState) return;
-      tempCropState.zoom = Number(e.target.value);
-      renderEditor();
-    });
-
+    // Fare ile Sürükleme ve Zoom
     const editorCanvas = document.getElementById('editorCanvas');
 
     editorCanvas.addEventListener('mousedown', (e) => {
       if (!tempCropState) return;
       editorDrag = { startX: e.clientX, startY: e.clientY };
+      editorCanvas.style.cursor = 'grabbing';
     });
 
     document.addEventListener('mousemove', (e) => {
       if (!editorDrag || !tempCropState) return;
-      const sensitivity = 0.0015 / Math.max(1, tempCropState.zoom * 0.7);
-      tempCropState.x = Math.max(0, Math.min(1, tempCropState.x - (e.clientX - editorDrag.startX) * sensitivity));
-      tempCropState.y = Math.max(0, Math.min(1, tempCropState.y - (e.clientY - editorDrag.startY) * sensitivity));
+      const dx = e.clientX - editorDrag.startX;
+      const dy = e.clientY - editorDrag.startY;
+
+      tempCropState.offsetX = (tempCropState.offsetX || 0) + (dx / editorCanvas.width);
+      tempCropState.offsetY = (tempCropState.offsetY || 0) + (dy / editorCanvas.height);
+
       editorDrag.startX = e.clientX;
       editorDrag.startY = e.clientY;
       renderEditor();
@@ -843,6 +870,7 @@
 
     document.addEventListener('mouseup', () => {
       editorDrag = null;
+      editorCanvas.style.cursor = 'grab';
     });
 
     editorCanvas.addEventListener('wheel', (e) => {
@@ -856,50 +884,47 @@
 
     editorCanvas.addEventListener('dblclick', () => {
       if (!tempCropState) return;
-      tempCropState = { zoom: 1, x: 0.5, y: 0.5 };
-      document.getElementById('zoomRange').value = 1;
+      tempCropState.offsetX = 0;
+      tempCropState.offsetY = 0;
       renderEditor();
     });
 
+    // Sürükle Bırak Alanı
     const dropZone = document.getElementById('dropZone');
-
-    dropZone.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      dropZone.style.background = 'var(--drop-hover)';
-    });
-
-    dropZone.addEventListener('dragleave', () => {
-      dropZone.style.background = 'var(--soft-bg)';
-    });
-
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.style.background = 'var(--drop-hover)'; });
+    dropZone.addEventListener('dragleave', () => { dropZone.style.background = 'var(--soft-bg)'; });
     dropZone.addEventListener('drop', (e) => {
       e.preventDefault();
       dropZone.style.background = 'var(--soft-bg)';
-
       const files = [...e.dataTransfer.files].filter(f => f.type.startsWith('image/'));
-
       if (files.length !== 4) {
-        alert('Lütfen tam olarak 4 fotoğraf bırakın.');
+        alert('Lütfen tam 4 fotoğraf yükleyin.');
         return;
       }
-
       droppedFiles = files;
-      cropStates = files.map(() => ({ zoom: 1, x: 0.5, y: 0.5 }));
+      cropStates = files.map(() => createDefaultCrop());
       selectedIndex = 0;
-      dropZone.innerHTML = '<strong>4 fotoğraf yüklendi ✔</strong><br><span style="color:var(--muted); font-size:14px;">Sıralamayı aşağıdaki önizlemeleri sürükleyerek değiştirebilirsin</span>';
+      dropZone.innerHTML = '<strong>4 fotoğraf yüklendi ✔</strong>';
       renderThumbs();
+      syncCropControls();
     });
+
+    function downloadJpg() {
+      if (!canvas.width) return alert('Önce kolajı oluşturun.');
+      const link = document.createElement('a');
+      const safeTitle = (titleInput.value.trim() || 'kolaj').replace(/[^a-z0-9]/gi, '_');
+      const format = exportFormatSelect.value;
+      link.download = `${safeTitle}.${format === 'png' ? 'png' : 'jpg'}`;
+      link.href = format === 'png' ? canvas.toDataURL('image/png') : canvas.toDataURL('image/jpeg', 1.0);
+      link.click();
+    }
 
     downloadBtn.addEventListener('click', downloadJpg);
 
     document.getElementById('pdfBtn').addEventListener('click', () => {
-      if (!canvas.width || !canvas.height) {
-        alert('Önce kolajı oluşturun.');
-        return;
-      }
+      if (!canvas.width) return alert('Önce kolajı oluşturun.');
       const pdfWindow = window.open('', '_blank');
-      const imgData = canvas.toDataURL('image/png');
-      pdfWindow.document.write(`<!DOCTYPE html><html><head><title>PDF</title><style>html,body{margin:0;padding:0}img{width:100%;display:block}</style></head><body><img src="${imgData}"></body></html>`);
+      pdfWindow.document.write(`<!DOCTYPE html><html><head><title>PDF</title><style>html,body{margin:0;padding:0}img{width:100%}</style></head><body><img src="${canvas.toDataURL('image/png')}"></body></html>`);
       pdfWindow.document.close();
       pdfWindow.focus();
       pdfWindow.print();
@@ -907,30 +932,13 @@
 
     const themeToggle = document.getElementById('themeToggle');
     const root = document.documentElement;
-    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)');
-    const savedTheme = localStorage.getItem('themePreference') || (systemPrefersDark.matches ? 'dark' : 'light');
-
-    function applyTheme(theme) {
-      root.setAttribute('data-theme', theme);
-      if (editorImage && tempCropState) renderEditor();
-      if (droppedFiles.length) renderThumbs();
-    }
-
     function toggleTheme() {
-      const current = root.getAttribute('data-theme') || 'light';
-      const next = current === 'light' ? 'dark' : 'light';
-      localStorage.setItem('themePreference', next);
-      applyTheme(next);
+      const current = root.getAttribute('data-theme') || 'dark';
+      const next = current === 'dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
     }
-
-    applyTheme(savedTheme);
+    root.setAttribute('data-theme', 'dark');
     themeToggle.addEventListener('click', toggleTheme);
-
-    systemPrefersDark.addEventListener('change', () => {
-      if (!localStorage.getItem('themePreference')) {
-        applyTheme(systemPrefersDark.matches ? 'dark' : 'light');
-      }
-    });
   </script>
 </body>
 </html>
