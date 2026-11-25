@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PDF → PNG Dönüştürücü</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f4f6fa;
+      --panel: #ffffff;
+      --text: #172033;
+      --muted: #687386;
+      --line: #e3e8f0;
+      --accent: #315efb;
+      --accent-dark: #244bd0;
+      --soft: #edf2ff;
+      --success: #16794b;
+      --danger: #b42318;
+      --shadow: 0 18px 55px rgba(24, 39, 75, .09);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at 12% 0%, #e8edff 0, transparent 34%), var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    .shell { width: min(980px, calc(100% - 32px)); margin: 0 auto; padding: 54px 0 70px; }
+    .topline { display: flex; align-items: center; gap: 11px; margin-bottom: 24px; }
+    .brand-icon {
+      display: grid; place-items: center; width: 42px; height: 42px; border-radius: 13px;
+      color: white; background: linear-gradient(145deg, #4778ff, #244bd0);
+      box-shadow: 0 8px 20px rgba(49, 94, 251, .25); font-size: 19px; font-weight: 800;
+    }
+    .brand { font-size: 14px; font-weight: 750; letter-spacing: .02em; }
+    .brand span { display: block; color: var(--muted); font-size: 11px; font-weight: 550; margin-top: 2px; }
+    h1 { font-size: clamp(30px, 5vw, 43px); letter-spacing: -.045em; line-height: 1.08; margin: 0 0 13px; }
+    .intro { max-width: 680px; color: var(--muted); font-size: 15px; line-height: 1.7; margin: 0 0 30px; }
+    .panel {
+      background: var(--panel); border: 1px solid rgba(223, 229, 239, .9);
+      border-radius: 22px; box-shadow: var(--shadow); padding: 26px;
+    }
+    .dropzone {
+      border: 1.7px dashed #b8c5dc; background: #fafbfe; border-radius: 17px;
+      min-height: 210px; display: flex; flex-direction: column; align-items: center;
+      justify-content: center; text-align: center; padding: 26px; cursor: pointer;
+      transition: .18s ease;
+    }
+    .dropzone:hover, .dropzone.dragover { border-color: var(--accent); background: #f2f5ff; }
+    .upload-icon {
+      width: 48px; height: 48px; display: grid; place-items: center; border-radius: 15px;
+      background: var(--soft); color: var(--accent); font-size: 23px; margin-bottom: 13px;
+    }
+    .drop-title { font-size: 16px; font-weight: 750; margin-bottom: 6px; }
+    .drop-sub { color: var(--muted); font-size: 13px; line-height: 1.55; }
+    .file-input { display: none; }
+    .file-info {
+      display: none; align-items: center; gap: 12px; margin-top: 15px; padding: 13px 15px;
+      background: #f7f9fc; border: 1px solid var(--line); border-radius: 13px;
+    }
+    .file-badge {
+      width: 38px; height: 42px; display: grid; place-items: center; border-radius: 9px;
+      color: #b42318; background: #fff0ee; font-size: 11px; font-weight: 850;
+    }
+    .file-meta { min-width: 0; flex: 1; }
+    .file-name { font-size: 13px; font-weight: 700; overflow-wrap: anywhere; }
+    .file-size { color: var(--muted); font-size: 12px; margin-top: 3px; }
+    .remove-file {
+      border: 0; background: transparent; color: var(--muted); font-size: 20px;
+      cursor: pointer; padding: 4px 8px;
+    }
+    .settings {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 21px 0 18px;
+    }
+    .setting {
+      border: 1px solid var(--line); border-radius: 14px; padding: 15px 16px; background: #fff;
+    }
+    .setting-label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 7px; font-weight: 650; }
+    .setting-value { font-size: 16px; font-weight: 800; }
+    .setting-hint { display: block; color: var(--muted); font-size: 11px; margin-top: 4px; }
+    .quality-row { display: flex; align-items: center; gap: 12px; }
+    .actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    button {
+      border: 0; border-radius: 12px; padding: 13px 18px; font: inherit; font-size: 13px;
+      font-weight: 750; cursor: pointer; transition: .18s ease;
+    }
+    button:disabled { opacity: .48; cursor: not-allowed; }
+    .primary { color: #fff; background: var(--accent); box-shadow: 0 7px 17px rgba(49,94,251,.18); }
+    .primary:hover:not(:disabled) { background: var(--accent-dark); transform: translateY(-1px); }
+    .secondary { color: #344054; background: #eef1f6; }
+    .secondary:hover:not(:disabled) { background: #e4e9f1; }
+    .privacy { color: var(--muted); font-size: 11px; margin-left: auto; }
+    .progress-wrap { display: none; margin-top: 22px; }
+    .progress-head { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 12px; margin-bottom: 8px; }
+    .progress-track { height: 8px; border-radius: 20px; background: #edf0f5; overflow: hidden; }
+    .progress-bar { width: 0%; height: 100%; background: linear-gradient(90deg, #4778ff, #315efb); border-radius: inherit; transition: width .15s ease; }
+    .status { min-height: 20px; margin-top: 12px; font-size: 12px; color: var(--muted); }
+    .status.error { color: var(--danger); }
+    .status.success { color: var(--success); }
+    .results { display: none; margin-top: 23px; border-top: 1px solid var(--line); padding-top: 22px; }
+    .results-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 15px; }
+    .results-title { font-size: 15px; font-weight: 800; }
+    .results-count { color: var(--muted); font-size: 12px; margin-top: 3px; }
+    .result-list { display: grid; gap: 9px; }
+    .result-item {
+      display: flex; align-items: center; gap: 12px; border: 1px solid var(--line);
+      border-radius: 12px; padding: 10px 12px; min-width: 0;
+    }
+    .thumb { width: 43px; height: 43px; flex: 0 0 43px; object-fit: cover; border: 1px solid var(--line); border-radius: 7px; background: white; }
+    .result-name { min-width: 0; flex: 1; font-size: 12px; font-weight: 700; overflow-wrap: anywhere; }
+    .result-dim { display: block; color: var(--muted); font-size: 10px; font-weight: 500; margin-top: 3px; }
+    .download-one { padding: 9px 12px; font-size: 11px; color: var(--accent); background: var(--soft); white-space: nowrap; }
+    .format-downloads { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 16px 0 22px; }
+    .format-download {
+      display: flex; align-items: center; justify-content: flex-start; gap: 13px;
+      min-height: 76px; padding: 14px 16px; text-align: left; border: 1px solid var(--line);
+      border-radius: 14px; background: #fff;
+    }
+    .format-download:hover { transform: translateY(-1px); box-shadow: 0 7px 18px rgba(24,39,75,.08); }
+    .png-download { border-color: #cdd9ff; background: #f7f9ff; color: #244bd0; }
+    .format-mark {
+      display: grid; place-items: center; width: 43px; height: 43px; flex: 0 0 43px;
+      border-radius: 10px; background: rgba(255,255,255,.85); font-size: 11px; font-weight: 900;
+      border: 1px solid currentColor;
+    }
+    .format-download strong { display: block; font-size: 13px; }
+    .format-download small { display: block; margin-top: 4px; font-size: 10px; font-weight: 550; opacity: .75; }
+    .individual-title { margin: 4px 0 11px; font-size: 12px; font-weight: 800; color: #465166; }
+    .download-pair { display: flex; gap: 6px; }
+    .download-one.png-one { color: #244bd0; background: #edf2ff; }
+    .note {
+      display: flex; gap: 10px; align-items: flex-start; margin-top: 17px; padding: 13px 14px;
+      border-radius: 12px; background: #f7f9fc; color: var(--muted); font-size: 11px; line-height: 1.6;
+    }
+    .note strong { color: #344054; }
+    footer { text-align: center; color: #8993a4; font-size: 11px; margin-top: 22px; }
+    @media (max-width: 640px) {
+      .shell { padding-top: 30px; }
+      .panel { padding: 17px; border-radius: 17px; }
+      .settings { grid-template-columns: 1fr; }
+      .privacy { width: 100%; margin: 2px 0 0; }
+      .results-head { align-items: flex-start; flex-direction: column; }
+      .download-one { padding: 8px 9px; }
+      .format-downloads { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <div class="topline">
+      <div class="brand-icon">J</div>
+      <div class="brand">PDF TO PNG<span>Yerel dosya dönüştürücü</span></div>
+    </div>
+
+    <h1>PDF dosyanı yüksek kaliteli görsele dönüştür.</h1>
+    <p class="intro">
+      PDF sayfalarını 7000 × 7000 piksel kayıpsız PNG olarak hazırla. Dış beyaz boşluklar otomatik kırpılır.
+      Sayfa oranı korunur ve her sayfa beyaz tuvalin tam ortasına hizalanır.
+    </p>
+
+    <section class="panel">
+      <label class="dropzone" id="dropzone" for="pdfInput">
+        <div class="upload-icon">↑</div>
+        <div class="drop-title">PDF dosyanı buraya bırak</div>
+        <div class="drop-sub">veya dosya seçmek için tıkla<br>Yalnızca PDF dosyaları desteklenir</div>
+      </label>
+      <input class="file-input" id="pdfInput" type="file" accept="application/pdf,.pdf" />
+
+      <div class="file-info" id="fileInfo">
+        <div class="file-badge">PDF</div>
+        <div class="file-meta">
+          <div class="file-name" id="fileName"></div>
+          <div class="file-size" id="fileSize"></div>
+        </div>
+        <button class="remove-file" id="removeFile" type="button" title="Dosyayı kaldır" aria-label="Dosyayı kaldır">×</button>
+      </div>
+
+      <div class="settings">
+        <div class="setting">
+          <span class="setting-label">Çıktı boyutu</span>
+          <span class="setting-value">7000 × 7000 px</span>
+          <span class="setting-hint">Sabit kare tuval · 1:1</span>
+        </div>
+        <div class="setting">
+          <span class="setting-label">Çıktı formatı</span>
+          <span class="setting-value">PNG · Kayıpsız</span>
+          <span class="setting-hint">Her PDF sayfası ayrı PNG dosyası olarak hazırlanır.</span>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="primary" id="convertBtn" type="button" disabled>PNG olarak dönüştür</button>
+        <span class="privacy">Dosyaların cihazında işlenir.</span>
+      </div>
+
+      <div class="progress-wrap" id="progressWrap">
+        <div class="progress-head">
+          <span id="progressLabel">Dönüştürülüyor…</span>
+          <span id="progressPercent">0%</span>
+        </div>
+        <div class="progress-track"><div class="progress-bar" id="progressBar"></div></div>
+      </div>
+      <div class="status" id="status" role="status" aria-live="polite"></div>
+
+      <div class="results" id="results">
+        <div class="results-head">
+          <div>
+            <div class="results-title">PNG dosyaların hazır</div>
+            <div class="results-count" id="resultsCount"></div>
+          </div>
+        </div>
+        <div class="format-downloads" style="grid-template-columns:1fr">
+          <button class="format-download png-download" id="downloadPngBtn" type="button">
+            <span class="format-mark">PNG</span>
+            <span><strong>Tüm PNG dosyalarını indir</strong><small>ZIP arşivi · Kayıpsız sıkıştırma</small></span>
+          </button>
+        </div>
+        <div class="individual-title">Sayfaları tek tek indir</div>
+        <div class="result-list" id="resultList"></div>
+      </div>
+
+      <div class="note">
+        <span>ⓘ</span>
+        <div><strong>Kalite ve hizalama:</strong> PNG, görüntü oluşturulduktan sonra kayıpsız sıkıştırılır. PDF sayfasının dışındaki beyaz kenar boşlukları algılanıp kırpılır; belge oranı korunur, dikey sayfalarda içerik 7000 piksel yüksekliğe ölçeklenir ve yatayda ortalanır. PDF içindeki düşük çözünürlüklü taramalar, kaynaklarında olmayan ayrıntıları kazanmaz.</div>
+      </div>
+    </section>
+    <footer>PDF → PNG · 7000 × 7000 px · İşlem tarayıcı içinde gerçekleştirilir</footer>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script>
+    (() => {
+      const SIZE = 7000;
+      const pdfInput = document.getElementById('pdfInput');
+      const dropzone = document.getElementById('dropzone');
+      const fileInfo = document.getElementById('fileInfo');
+      const fileName = document.getElementById('fileName');
+      const fileSize = document.getElementById('fileSize');
+      const convertBtn = document.getElementById('convertBtn');
+      const downloadPngBtn = document.getElementById('downloadPngBtn');
+      const progressWrap = document.getElementById('progressWrap');
+      const progressBar = document.getElementById('progressBar');
+      const progressLabel = document.getElementById('progressLabel');
+      const progressPercent = document.getElementById('progressPercent');
+      const status = document.getElementById('status');
+      const results = document.getElementById('results');
+      const resultList = document.getElementById('resultList');
+      const resultsCount = document.getElementById('resultsCount');
+
+      let selectedFile = null;
+      let converted = [];
+      let busy = false;
+
+      if (window.pdfjsLib) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc =
+          'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      }
+
+      function formatBytes(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+      }
+
+      function setStatus(message, type = '') {
+        status.textContent = message;
+        status.className = 'status' + (type ? ' ' + type : '');
+      }
+
+      function setProgress(done, total, label) {
+        const percent = total ? Math.round((done / total) * 100) : 0;
+        progressBar.style.width = percent + '%';
+        progressPercent.textContent = percent + '%';
+        progressLabel.textContent = label || 'Dönüştürülüyor…';
+      }
+
+      function clearResults() {
+        converted.forEach(item => {
+          if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
+        });
+        converted = [];
+        resultList.innerHTML = '';
+        results.style.display = 'none';
+        downloadPngBtn.disabled = true;
+      }
+
+      function selectFile(file) {
+        if (!file) return;
+        if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+          setStatus('Lütfen geçerli bir PDF dosyası seç.', 'error');
+          return;
+        }
+        if (busy) return;
+        clearResults();
+        selectedFile = file;
+        fileName.textContent = file.name;
+        fileSize.textContent = formatBytes(file.size);
+        fileInfo.style.display = 'flex';
+        convertBtn.disabled = false;
+        setStatus('Dosya hazır. Dönüştürmeye başlayabilirsin.');
+        progressWrap.style.display = 'none';
+      }
+
+      pdfInput.addEventListener('change', event => {
+        selectFile(event.target.files && event.target.files[0]);
+      });
+
+      document.getElementById('removeFile').addEventListener('click', () => {
+        if (busy) return;
+        selectedFile = null;
+        pdfInput.value = '';
+        fileInfo.style.display = 'none';
+        convertBtn.disabled = true;
+        clearResults();
+        setStatus('');
+      });
+
+      ['dragenter', 'dragover'].forEach(name => {
+        dropzone.addEventListener(name, event => {
+          event.preventDefault();
+          dropzone.classList.add('dragover');
+        });
+      });
+      ['dragleave', 'drop'].forEach(name => {
+        dropzone.addEventListener(name, event => {
+          event.preventDefault();
+          dropzone.classList.remove('dragover');
+        });
+      });
+      dropzone.addEventListener('drop', event => {
+        const file = event.dataTransfer.files && event.dataTransfer.files[0];
+        selectFile(file);
+      });
+
+      function canvasToBlob(canvas) {
+        return new Promise((resolve, reject) => {
+          canvas.toBlob(blob => {
+            if (blob) resolve(blob);
+            else reject(new Error('PNG dosyası oluşturulamadı.'));
+          }, 'image/png');
+        });
+      }
+
+      function baseName(name) {
+        return name.replace(/\.pdf$/i, '').replace(/[\\/:*?"<>|]/g, '_').trim() || 'pdf';
+      }
+
+      // PDF sayfasındaki beyaz dış kenarları bulur. 1 px güvenlik payı,
+      // çizgilerin ve harflerin kenardan kesilmesini önler.
+      function detectContentBounds(canvas) {
+        const width = canvas.width;
+        const height = canvas.height;
+        const context = canvas.getContext('2d', { willReadFrequently: true });
+        const pixels = context.getImageData(0, 0, width, height).data;
+        let left = width;
+        let top = height;
+        let right = -1;
+        let bottom = -1;
+        const threshold = 250;
+
+        for (let y = 0; y < height; y++) {
+          for (let x = 0; x < width; x++) {
+            const i = (y * width + x) * 4;
+            if (pixels[i] < threshold || pixels[i + 1] < threshold || pixels[i + 2] < threshold) {
+              if (x < left) left = x;
+              if (x > right) right = x;
+              if (y < top) top = y;
+              if (y > bottom) bottom = y;
+            }
+          }
+        }
+
+        // Tamamen beyaz veya algılanamayan sayfada sayfanın tamamını kullan.
+        if (right < left || bottom < top) {
+          return { x: 0, y: 0, width, height };
+        }
+
+        const padding = 1;
+        left = Math.max(0, left - padding);
+        top = Math.max(0, top - padding);
+        right = Math.min(width - 1, right + padding);
+        bottom = Math.min(height - 1, bottom + padding);
+
+        return {
+          x: left,
+          y: top,
+          width: right - left + 1,
+          height: bottom - top + 1
+        };
+      }
+
+      async function convertPdf() {
+        if (!selectedFile || busy) return;
+        if (!window.pdfjsLib || !window.JSZip) {
+          setStatus('Gerekli kütüphaneler yüklenemedi. İnternet bağlantını kontrol edip sayfayı yenile.', 'error');
+          return;
+        }
+
+        busy = true;
+        convertBtn.disabled = true;
+        downloadPngBtn.disabled = true;
+        clearResults();
+        progressWrap.style.display = 'block';
+        setProgress(0, 1, 'PDF açılıyor…');
+        setStatus('PDF tarayıcıda işleniyor. 7000 × 7000 çıktılar yüksek bellek kullanabilir; işlem sürebilir.');
+
+        let pdf = null;
+        let outputCanvas = null;
+
+        try {
+          const data = await selectedFile.arrayBuffer();
+          pdf = await pdfjsLib.getDocument({ data: new Uint8Array(data) }).promise;
+          const total = pdf.numPages;
+          const outputBase = baseName(selectedFile.name);
+
+          outputCanvas = document.createElement('canvas');
+          outputCanvas.width = SIZE;
+          outputCanvas.height = SIZE;
+          const ctx = outputCanvas.getContext('2d', { alpha: false });
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+
+          for (let pageNumber = 1; pageNumber <= total; pageNumber++) {
+            setProgress(pageNumber - 1, total, `${pageNumber}. sayfanın boşlukları analiz ediliyor…`);
+            const page = await pdf.getPage(pageNumber);
+            const scanViewport = page.getViewport({ scale: 1 });
+
+            // İlk düşük çözünürlüklü tarama, sayfanın gerçek içerik sınırlarını bulur.
+            const scanCanvas = document.createElement('canvas');
+            scanCanvas.width = Math.max(1, Math.ceil(scanViewport.width));
+            scanCanvas.height = Math.max(1, Math.ceil(scanViewport.height));
+            const scanCtx = scanCanvas.getContext('2d', { alpha: false, willReadFrequently: true });
+            scanCtx.fillStyle = '#ffffff';
+            scanCtx.fillRect(0, 0, scanCanvas.width, scanCanvas.height);
+            await page.render({ canvasContext: scanCtx, viewport: scanViewport }).promise;
+
+            const bounds = detectContentBounds(scanCanvas);
+            scanCanvas.width = 1;
+            scanCanvas.height = 1;
+
+            // Dikey sayfalarda içerik yüksekliğini 7000 px yap.
+            // Çok geniş sayfalarda ise içeriğin tamamını korumak için kareye sığdır.
+            const fitScale = Math.min(SIZE / bounds.height, SIZE / bounds.width);
+            const scale = fitScale;
+            const hiViewport = page.getViewport({ scale });
+            const contentWidth = bounds.width * scale;
+            const contentHeight = bounds.height * scale;
+            const xOffset = (SIZE - contentWidth) / 2 - bounds.x * scale;
+            const yOffset = (SIZE - contentHeight) / 2 - bounds.y * scale;
+
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, SIZE, SIZE);
+            await page.render({
+              canvasContext: ctx,
+              viewport: hiViewport,
+              transform: [1, 0, 0, 1, xOffset, yOffset]
+            }).promise;
+
+            // PDF sayfasını tek seferde kayıpsız PNG olarak kaydet.
+            setProgress(pageNumber - 1, total, `${pageNumber} / ${total} sayfa: PNG hazırlanıyor…`);
+            const pngBlob = await canvasToBlob(outputCanvas);
+            const pageSuffix = String(pageNumber).padStart(3, '0');
+            const pngFilename = `${outputBase}_sayfa_${pageSuffix}.png`;
+            const previewUrl = URL.createObjectURL(pngBlob);
+            converted.push({ pageNumber, pngBlob, pngFilename, previewUrl });
+
+            page.cleanup();
+            setProgress(pageNumber, total, `${pageNumber} / ${total} sayfa tamamlandı`);
+          }
+
+          outputCanvas.width = 1;
+          outputCanvas.height = 1;
+          await pdf.destroy();
+          pdf = null;
+
+          renderResults();
+          downloadPngBtn.disabled = false;
+          setStatus(`${total} sayfa 7000 × 7000 piksel kayıpsız PNG olarak hazırlandı. Dış beyaz boşluklar kırpıldı.`, 'success');
+        } catch (error) {
+          console.error(error);
+          let message = error && error.message ? error.message : 'Bilinmeyen bir hata oluştu.';
+          if (/password/i.test(message)) message = 'Bu PDF parola korumalı. Parolasız bir PDF dosyası kullan.';
+          setStatus('Dönüştürme başarısız: ' + message, 'error');
+        } finally {
+          if (outputCanvas) {
+            outputCanvas.width = 1;
+            outputCanvas.height = 1;
+          }
+          if (pdf) {
+            try { await pdf.destroy(); } catch (_) {}
+          }
+          busy = false;
+          convertBtn.disabled = !selectedFile;
+        }
+      }
+
+      function renderResults() {
+        resultList.innerHTML = '';
+        converted.forEach(item => {
+          const row = document.createElement('div');
+          row.className = 'result-item';
+
+          const img = document.createElement('img');
+          img.className = 'thumb';
+          img.src = item.previewUrl;
+          img.alt = `Sayfa ${item.pageNumber} önizlemesi`;
+
+          const name = document.createElement('div');
+          name.className = 'result-name';
+          name.append(document.createTextNode(`Sayfa ${item.pageNumber}`));
+          const dimensions = document.createElement('span');
+          dimensions.className = 'result-dim';
+          const fileSize = document.createElement('span');
+          fileSize.className = 'result-dim';
+          fileSize.textContent = `Dosya boyutu: ${formatBytes(item.pngBlob.size)}`;
+          dimensions.textContent = '7000 × 7000 px · PNG · Kayıpsız';
+          name.append(dimensions, fileSize);
+
+          const pngButton = document.createElement('button');
+          pngButton.className = 'download-one png-one';
+          pngButton.type = 'button';
+          pngButton.textContent = 'PNG indir';
+          pngButton.addEventListener('click', () => downloadBlob(item.pngBlob, item.pngFilename));
+
+          row.append(img, name, pngButton);
+          resultList.appendChild(row);
+        });
+        resultsCount.textContent = `${converted.length} PNG dosyası hazır`;
+        results.style.display = 'block';
+      }
+
+      function downloadBlob(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1500);
+      }
+
+      async function downloadZip() {
+        if (!converted.length || busy) return;
+        if (!window.JSZip) {
+          setStatus('ZIP kütüphanesi yüklenemedi. Sayfayı yenileyip tekrar dene.', 'error');
+          return;
+        }
+
+        downloadPngBtn.disabled = true;
+        setStatus('PNG ZIP dosyası hazırlanıyor…');
+        try {
+          const zip = new JSZip();
+          converted.forEach(item => zip.file(item.pngFilename, item.pngBlob));
+          const blob = await zip.generateAsync({
+            type: 'blob',
+            compression: 'STORE'
+          }, metadata => {
+            setStatus(`PNG ZIP hazırlanıyor: %${Math.round(metadata.percent)}`);
+          });
+
+          downloadBlob(blob, `${baseName(selectedFile ? selectedFile.name : 'pdf')}_PNG_7000x7000.zip`);
+          setStatus('PNG ZIP dosyası indirilmeye hazır.', 'success');
+        } catch (error) {
+          setStatus('ZIP oluşturulamadı: ' + (error.message || 'Bilinmeyen hata'), 'error');
+        } finally {
+          downloadPngBtn.disabled = false;
+        }
+      }
+
+      convertBtn.addEventListener('click', convertPdf);
+      downloadPngBtn.addEventListener('click', downloadZip);
+    })();
+  </script>
+</body>
+</html>
